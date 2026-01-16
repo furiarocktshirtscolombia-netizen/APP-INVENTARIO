@@ -129,13 +129,30 @@ export const aggregateSedeMetrics = (processedData: ProcessedItem[]): SedeMetric
     let totalCostoAjuste = 0;
     let totalFaltantes = 0;
     let totalSobrantes = 0;
+    
+    const ccDataMap: Record<string, { perfect: number; total: number }> = {};
 
     items.forEach(item => {
-      if (item.reliability === 1) perfectItems++;
+      const cc = item["Centro de Costos"] || "General";
+      if (!ccDataMap[cc]) ccDataMap[cc] = { perfect: 0, total: 0 };
+      ccDataMap[cc].total++;
+      
+      if (item.reliability === 1) {
+        perfectItems++;
+        ccDataMap[cc].perfect++;
+      }
       totalCobro += item.Cobro;
       totalCostoAjuste += item["Costo Ajuste"];
       if (item.Estado === 'Faltantes') totalFaltantes++;
       else if (item.Estado === 'Sobrantes') totalSobrantes++;
+    });
+
+    const ccMetrics: Record<string, { reliability: number; count: number }> = {};
+    Object.entries(ccDataMap).forEach(([name, data]) => {
+      ccMetrics[name] = {
+        reliability: (data.perfect / data.total) * 100,
+        count: data.total
+      };
     });
 
     return {
@@ -145,7 +162,8 @@ export const aggregateSedeMetrics = (processedData: ProcessedItem[]): SedeMetric
       totalFaltantes,
       totalSobrantes,
       totalCostoAjuste,
-      itemCount: items.length
+      itemCount: items.length,
+      ccMetrics
     };
   });
 };

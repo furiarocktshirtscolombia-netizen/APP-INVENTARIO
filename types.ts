@@ -33,6 +33,7 @@ export interface SedeMetrics {
   totalSobrantes: number;
   totalCostoAjuste: number;
   itemCount: number;
+  ccMetrics: Record<string, { reliability: number; count: number }>;
 }
 
 export type ViewType = 'dashboard' | 'detail' | 'cobros' | 'critical';
