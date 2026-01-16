@@ -58,6 +58,16 @@ export const processInventoryData = (data: any[]): ProcessedItem[] => {
     const stockFisico = Number(row["Stock Inventario"]) || 0;
     const variacion = Number(row["Variación Stock"]) ?? (stockFisico - stockSistema);
     
+    // Priorización del campo real de inventario solicitado
+    const unidad = String(
+      row["Unidad de Inventario"] || 
+      row["Unidad de Medida"] || 
+      row["Unidad de medida"] || 
+      row["Unidad"] || 
+      row["U.M."] || 
+      "-"
+    ).trim();
+    
     const estadoNormalizado = normalizeEstado(row["Estado"], variacion);
 
     // Parsing robusto de valores financieros (Cobro_Num)
@@ -76,6 +86,7 @@ export const processInventoryData = (data: any[]): ProcessedItem[] => {
       "Coste Línea": costeLinea,
       "Costo Ajuste": costoAjusteParsed,
       "Cobro": cobroParsed,
+      "Unidad": unidad,
       "Estado": estadoNormalizado 
     };
 

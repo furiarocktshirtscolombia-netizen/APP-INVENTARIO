@@ -8,6 +8,7 @@ export interface InventoryRawRow {
   "Subfamilia": string;
   "Artículo": string;
   "Subartículo": string;
+  "Unidad": string;
   "Stock a Fecha": number;
   "Stock Inventario": number;
   "Variación Stock": number;

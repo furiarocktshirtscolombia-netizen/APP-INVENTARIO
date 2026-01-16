@@ -102,8 +102,8 @@ const CobrosReport: React.FC<CobrosReportProps> = ({
               <thead>
                 <tr className="bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest">
                   <th className="px-6 py-5">Descripción del Artículo / Subartículo</th>
+                  <th className="px-6 py-5 text-center">Unidad (Inventario)</th>
                   <th className="px-6 py-5 text-center">Variación</th>
-                  <th className="px-6 py-5 text-right">Costo Ajuste</th>
                   <th className="px-6 py-5 text-right bg-emerald-600">Valor Cobro</th>
                 </tr>
               </thead>
@@ -123,11 +123,11 @@ const CobrosReport: React.FC<CobrosReportProps> = ({
                         </span>
                       </div>
                     </td>
+                    <td className="px-6 py-5 text-center font-bold text-slate-500 uppercase tracking-tighter">
+                      {item.Unidad}
+                    </td>
                     <td className={`px-6 py-5 text-center font-black text-base ${item["Variación Stock"] < 0 ? 'text-rose-600' : item["Variación Stock"] > 0 ? 'text-amber-600' : 'text-slate-400'}`}>
                       {item["Variación Stock"]}
-                    </td>
-                    <td className={`px-6 py-5 text-right font-bold italic ${item["Costo Ajuste"] < 0 ? 'text-rose-400' : 'text-slate-400'}`}>
-                      {formatCurrency(Math.abs(item["Costo Ajuste"]))}
                     </td>
                     <td className={`px-6 py-5 text-right font-black text-lg ${item.Cobro > 0 ? 'text-slate-900 bg-emerald-50/30' : 'text-slate-300'} border-l-2 border-emerald-100`}>
                       {formatCurrency(item.Cobro)}
