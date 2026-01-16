@@ -1,6 +1,7 @@
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ProcessedItem } from '../types';
+import { getTrafficLightColor, getStatusLabel } from '../utils/calculations';
 
 interface CobrosReportProps {
   data: ProcessedItem[];
@@ -9,6 +10,7 @@ interface CobrosReportProps {
   selectedEstado: string;
   startDate: string;
   endDate: string;
+  consecutive: string;
 }
 
 const CobrosReport: React.FC<CobrosReportProps> = ({ 
@@ -17,11 +19,27 @@ const CobrosReport: React.FC<CobrosReportProps> = ({
   selectedCentroCosto, 
   selectedEstado,
   startDate,
-  endDate
+  endDate,
+  consecutive
 }) => {
   const itemsToCharge = data;
   
-  // Cálculo de total respetando signos
+  // Cálculo de confiabilidad por Centro de Costo basado en los datos filtrados
+  const ccMetrics = useMemo(() => {
+    const groups: Record<string, { total: number; perfect: number }> = {};
+    data.forEach(item => {
+      const cc = item["Centro de Costos"] || "General";
+      if (!groups[cc]) groups[cc] = { total: 0, perfect: 0 };
+      groups[cc].total++;
+      if (item.reliability === 1) groups[cc].perfect++;
+    });
+    return Object.entries(groups).map(([name, stats]) => ({
+      name,
+      reliability: (stats.perfect / stats.total) * 100,
+      total: stats.total
+    })).sort((a, b) => b.reliability - a.reliability);
+  }, [data]);
+
   const totalCobro = itemsToCharge.reduce((acc, item) => {
     const val = item.Estado_Normalizado === 'Faltantes' ? -item.Cobro : item.Cobro;
     return acc + val;
@@ -46,17 +64,23 @@ const CobrosReport: React.FC<CobrosReportProps> = ({
                 <i className="fa-solid fa-brain text-2xl"></i>
               </div>
               <div>
-                <h1 className="text-2xl font-black text-slate-800 tracking-tighter uppercase leading-none">Liquidación de Inventarios</h1>
+                <h1 className="text-2xl font-black text-slate-800 tracking-tighter uppercase leading-none">Cobros de Inventarios</h1>
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-2">Documento de Soporte Operativo</p>
               </div>
             </div>
-            <div className="text-right">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Fecha Generación</p>
-              <p className="font-black text-slate-800 text-lg">{new Date().toLocaleDateString('es-CO')}</p>
+            <div className="flex flex-row gap-8">
+              <div className="text-right">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Consecutivo de Cobro:</p>
+                <p className="font-black text-emerald-700 text-lg">{consecutive}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Fecha Generación:</p>
+                <p className="font-black text-slate-800 text-lg">{new Date().toLocaleDateString('es-CO')}</p>
+              </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-5 bg-white border border-slate-200 rounded-2xl shadow-sm">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-5 bg-white border border-slate-200 rounded-2xl shadow-sm mb-8">
             <div>
               <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Punto de Venta:</p>
               <p className="text-xs font-black text-emerald-600 uppercase truncate">{selectedSede}</p>
@@ -74,6 +98,29 @@ const CobrosReport: React.FC<CobrosReportProps> = ({
               <p className="text-xs font-black text-slate-700 uppercase truncate">
                 {startDate || 'Inicio'} / {endDate || 'Fin'}
               </p>
+            </div>
+          </div>
+
+          {/* SECCIÓN NUEVA: CONFIABILIDAD POR CENTRO DE COSTO */}
+          <div className="space-y-4">
+            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Confiabilidad de Inventarios por Centro de Costo</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {ccMetrics.map(cc => {
+                const color = getTrafficLightColor(cc.reliability);
+                const status = getStatusLabel(cc.reliability);
+                return (
+                  <div key={cc.name} className="bg-white border border-slate-200 p-4 rounded-xl shadow-sm flex items-center justify-between">
+                    <div>
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">{cc.name}</p>
+                      <p className="text-xl font-black text-slate-800 leading-none">{cc.reliability.toFixed(1)}%</p>
+                    </div>
+                    <div className={`px-3 py-1.5 rounded-lg bg-${color}-50 text-${color}-600 border border-${color}-100 flex flex-col items-center min-w-[80px]`}>
+                      <span className="text-[8px] font-black uppercase tracking-widest leading-none mb-0.5">Estado</span>
+                      <span className="text-[10px] font-black">{status}</span>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -129,7 +176,7 @@ const CobrosReport: React.FC<CobrosReportProps> = ({
               })}
               {itemsToCharge.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="py-20 text-center text-slate-300 font-black uppercase tracking-widest text-sm italic">
+                  <td colSpan={4} className="py-20 text-center text-slate-300 font-black uppercase italic tracking-widest text-sm">
                     No hay ítems con los criterios seleccionados para este reporte.
                   </td>
                 </tr>

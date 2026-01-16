@@ -3,7 +3,6 @@ import { InventoryRawRow, ProcessedItem, SedeMetrics } from '../types';
 
 /**
  * NORMALIZACIÓN DE FECHAS
- * Convierte cualquier formato (Excel serial, ISO, DD/MM/YYYY) a string YYYY-MM-DD.
  */
 export const normalizeDate = (val: any): string => {
   if (!val) return '';
@@ -11,24 +10,20 @@ export const normalizeDate = (val: any): string => {
   let dateObj: Date | null = null;
 
   if (typeof val === 'number') {
-    // Excel Serial Number
     dateObj = new Date(Math.round((val - 25569) * 86400 * 1000));
   } else if (val instanceof Date) {
     dateObj = val;
   } else {
     const str = String(val).trim();
     if (!str || str === '-') return '';
-
-    // Manejo de formatos comunes DD/MM/YYYY
     const parts = str.split(/[\/\-]/);
     if (parts.length === 3) {
-      if (parts[2].length === 4) { // DD/MM/YYYY
+      if (parts[2].length === 4) {
         dateObj = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
-      } else if (parts[0].length === 4) { // YYYY/MM/DD
+      } else if (parts[0].length === 4) {
         dateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
       }
     }
-    
     if (!dateObj || isNaN(dateObj.getTime())) {
       dateObj = new Date(str);
     }
@@ -40,7 +35,6 @@ export const normalizeDate = (val: any): string => {
     const day = String(dateObj.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
   }
-
   return '';
 };
 
@@ -71,27 +65,16 @@ export const processInventoryData = (data: any[]): ProcessedItem[] => {
     const variacion = Number(row["Variación Stock"]) ?? (stockFisico - stockSistema);
     const rawDate = row["Fecha Doc"] || row["Fecha"] || "";
     const fechaOperativa = normalizeDate(rawDate);
-    
     const rawCobro = parseCurrency(row["Cobro"]);
     const costoAjuste = parseCurrency(row["Costo Ajuste"]);
-    
-    // Si no hay cobro pero hay costo de ajuste, calculamos el cobro.
     const cobro = (rawCobro === 0 && costoAjuste !== 0) ? Math.abs(costoAjuste) : rawCobro;
     const reliability = variacion === 0 ? 1 : 0;
-    
-    let unidad = String(
-      row["Unidad"] || row["Unid."] || row["U.M."] || row["Unid"] || row["UNIDAD"] || ""
-    ).trim().toUpperCase();
-
+    let unidad = String(row["Unidad"] || row["Unid."] || row["U.M."] || row["Unid"] || row["UNIDAD"] || "").trim().toUpperCase();
     const commonUnits = ["ONZA", "UNIDADES", "GRAMOS", "KG", "GRAMO", "ONZAS", "UND", "UNIDAD", "LT", "LITRO", "BOTELLA"];
     if ((!unidad || unidad === "-" || unidad === "UND") && subarticulo) {
-      if (commonUnits.includes(subarticulo.toUpperCase())) {
-        unidad = subarticulo.toUpperCase();
-      }
+      if (commonUnits.includes(subarticulo.toUpperCase())) { unidad = subarticulo.toUpperCase(); }
     }
-
     const estadoNormalizado = normalizeEstado(row["Estado"], variacion);
-
     return {
       ...row,
       id: `${almacen}-${articulo}-${index}`,
@@ -121,42 +104,28 @@ export const aggregateSedeMetrics = (processedData: ProcessedItem[]): SedeMetric
     list.push(item);
     map.set(item.Almacén, list);
   });
-
   return Array.from(map.entries()).map(([almacen, items]) => {
     let perfectItems = 0;
     let totalCobro = 0;
     let totalCostoAjuste = 0;
     let totalFaltantes = 0;
     let totalSobrantes = 0;
-    
     const ccDataMap: Record<string, { perfect: number; total: number }> = {};
-
     items.forEach(item => {
       const cc = item["Centro de Costos"] || "General";
       if (!ccDataMap[cc]) ccDataMap[cc] = { perfect: 0, total: 0 };
       ccDataMap[cc].total++;
-      
-      if (item.reliability === 1) {
-        perfectItems++;
-        ccDataMap[cc].perfect++;
-      }
-      
+      if (item.reliability === 1) { perfectItems++; ccDataMap[cc].perfect++; }
       const cobroEfectivo = item.Estado_Normalizado === 'Faltantes' ? -item.Cobro : item.Cobro;
       totalCobro += cobroEfectivo;
-      
       totalCostoAjuste += item["Costo Ajuste"];
       if (item.Estado_Normalizado === 'Faltantes') totalFaltantes++;
       else if (item.Estado_Normalizado === 'Sobrantes') totalSobrantes++;
     });
-
     const ccMetrics: Record<string, { reliability: number; count: number }> = {};
     Object.entries(ccDataMap).forEach(([name, data]) => {
-      ccMetrics[name] = {
-        reliability: (data.perfect / data.total) * 100,
-        count: data.total
-      };
+      ccMetrics[name] = { reliability: (data.perfect / data.total) * 100, count: data.total };
     });
-
     return {
       almacen,
       globalReliability: items.length > 0 ? (perfectItems / items.length) * 100 : 100,
@@ -170,16 +139,16 @@ export const aggregateSedeMetrics = (processedData: ProcessedItem[]): SedeMetric
   });
 };
 
-/**
- * REGLA VISUAL DE NEGOCIO:
- * 🟢 ≥ 85% → Confiable
- * 🟡 60% – 84% → Atención
- * 🔴 < 60% → Crítico
- */
 export const getTrafficLightColor = (percentage: number): string => {
   if (percentage >= 85) return 'emerald';
   if (percentage >= 60) return 'amber';
   return 'rose';
+};
+
+export const getStatusLabel = (percentage: number): string => {
+  if (percentage >= 85) return 'EXCELENTE';
+  if (percentage >= 60) return 'ATENCIÓN';
+  return 'CRÍTICO';
 };
 
 export const getRiskLevelText = (percentage: number): string => {
