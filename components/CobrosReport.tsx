@@ -19,168 +19,129 @@ const CobrosReport: React.FC<CobrosReportProps> = ({
   startDate,
   endDate
 }) => {
-  /**
-   * LÓGICA DE VISUALIZACIÓN COHERENTE CON FILTROS:
-   * 1. Si el filtro es "Todos", mostramos solo lo que tiene cobro para mantener el reporte enfocado.
-   * 2. Si se selecciona un estado específico (ej. "Sin Novedad"), mostramos esos registros 
-   *    aunque el cobro sea $0, para validar que el filtro está funcionando.
-   */
-  const itemsToDisplay = selectedEstado === 'Todos' 
-    ? data.filter(item => item.Cobro > 0) 
-    : data;
+  const itemsToCharge = data.filter(item => item.Cobro > 0);
+  const totalCobro = itemsToCharge.reduce((acc, item) => acc + item.Cobro, 0);
 
-  const totalCobro = itemsToDisplay.reduce((acc, item) => acc + (Number(item.Cobro) || 0), 0);
-
-  const formatCurrency = (val: number) => 
-    new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(val);
+  const handlePrint = () => {
+    window.print();
+  };
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8 print:m-0 print:p-0 animate-in fade-in duration-500">
-      <div className="flex justify-between items-end print:hidden">
-        <div>
-          <h2 className="text-2xl font-black text-slate-800 uppercase tracking-tighter">
-            {selectedEstado === 'Todos' ? 'Informe General de Cobros' : `Liquidación de ${selectedEstado}`}
-          </h2>
-          <p className="text-sm font-bold text-slate-400 uppercase tracking-widest mt-1">
-            Filtro Activo: <span className="text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-100">{selectedEstado}</span>
-          </p>
-        </div>
+    <div className="max-w-4xl mx-auto space-y-6 print:m-0 print:p-0">
+      <div className="flex justify-between items-center print:hidden">
+        <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight">Informe de Cobros Personalizado</h2>
         <button 
-          onClick={() => window.print()} 
-          className="bg-slate-900 text-white px-8 py-4 rounded-2xl text-sm font-black uppercase tracking-widest hover:bg-black transition-all shadow-2xl hover:shadow-emerald-200/20 active:scale-95 flex items-center gap-3 border-2 border-slate-800"
+          onClick={handlePrint}
+          className="bg-slate-800 text-white px-5 py-2.5 rounded-xl text-sm font-black uppercase tracking-tighter flex items-center gap-2 hover:bg-slate-900 transition-all shadow-md active:scale-95"
         >
-          <i className="fa-solid fa-file-invoice-dollar text-xl"></i>
+          <i className="fa-solid fa-print"></i>
           Imprimir Reporte
         </button>
       </div>
 
-      <div className="bg-white border-2 border-slate-100 shadow-[0_20px_50px_rgba(0,0,0,0.05)] rounded-[40px] overflow-hidden print:border-none print:shadow-none print:rounded-none">
-        {/* ENCABEZADO DE DOCUMENTO */}
-        <div className="p-12 border-b-4 border-slate-900 bg-slate-50/30">
-          <div className="flex justify-between items-start">
-            <div className="space-y-6">
-              <div className="flex items-center gap-4">
-                <div className="bg-slate-900 p-4 rounded-3xl text-white shadow-2xl">
-                  <i className="fa-solid fa-brain text-4xl"></i>
-                </div>
-                <div>
-                  <h1 className="text-3xl font-black text-slate-900 uppercase tracking-tighter leading-none">
-                    Acta de Liquidación
-                  </h1>
-                  <p className="text-xs font-black text-slate-400 uppercase tracking-[0.3em] mt-2 italic">Control Interno & Auditoría</p>
-                </div>
+      <div className="bg-white border border-slate-200 shadow-xl rounded-2xl overflow-hidden print:border-none print:shadow-none">
+        <div className="p-10 border-b border-slate-100 bg-slate-50/30">
+          <div className="flex justify-between items-start mb-8">
+            <div className="flex items-center gap-4">
+              <div className="bg-emerald-600 w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-emerald-100">
+                <i className="fa-solid fa-brain text-2xl"></i>
               </div>
-              
-              <div className="flex flex-wrap gap-4">
-                 <div className="bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm">
-                   <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-tight">Almacén Origen</p>
-                   <p className="text-xs font-black text-slate-800 uppercase">{selectedSede}</p>
-                 </div>
-                 <div className="bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm">
-                   <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-tight">Centro de Costo</p>
-                   <p className="text-xs font-black text-slate-800 uppercase">{selectedCentroCosto}</p>
-                 </div>
-                 <div className="bg-white px-4 py-2 rounded-xl border border-emerald-200 shadow-sm">
-                   <p className="text-[8px] font-black text-emerald-500 uppercase tracking-widest leading-tight">Estado Reportado</p>
-                   <p className="text-xs font-black text-emerald-700 uppercase">{selectedEstado}</p>
-                 </div>
+              <div>
+                <h1 className="text-2xl font-black text-slate-800 tracking-tighter uppercase leading-none">Liquidación de Inventarios</h1>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-2">Documento de Soporte Operativo</p>
               </div>
             </div>
-
-            <div className="text-right space-y-2">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Documento No.</p>
-              <p className="text-2xl font-black text-slate-900 tracking-tighter">INV-{new Date().getTime().toString().slice(-6)}</p>
-              <p className="text-xs font-bold text-slate-400">{new Date().toLocaleDateString('es-CO', { dateStyle: 'long' })}</p>
+            <div className="text-right">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Fecha Generación</p>
+              <p className="font-black text-slate-800 text-lg">{new Date().toLocaleDateString('es-CO')}</p>
             </div>
           </div>
-        </div>
 
-        {/* CUERPO DE LA TABLA */}
-        <div className="p-12">
-          <div className="overflow-hidden rounded-2xl border border-slate-100 shadow-sm">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest">
-                  <th className="px-6 py-5">Descripción del Artículo</th>
-                  <th className="px-6 py-5 text-center">Unidad (Inventario)</th>
-                  <th className="px-6 py-5 text-center">Variación</th>
-                  <th className="px-6 py-5 text-right bg-emerald-600">Valor Cobro</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {itemsToDisplay.map((item) => (
-                  <tr key={item.id} className="text-sm hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-5">
-                      <p className="font-black text-slate-900 uppercase leading-none mb-1">{item.Artículo}</p>
-                      <div className="flex items-center gap-2">
-                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">{item["Centro de Costos"]}</p>
-                        <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded border ${
-                          item.Estado === 'Faltantes' ? 'bg-rose-50 border-rose-100 text-rose-500' :
-                          item.Estado === 'Sobrantes' ? 'bg-amber-50 border-amber-100 text-amber-500' :
-                          'bg-emerald-50 border-emerald-100 text-emerald-500'
-                        }`}>
-                          {item.Estado}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-5 text-center font-bold text-slate-500 uppercase tracking-tighter">
-                      {/* Se utiliza Subartículo para la columna Unidad ya que es donde se encuentra la información de medida según el origen de datos actual */}
-                      {item.Subartículo || item.Unidad}
-                    </td>
-                    <td className={`px-6 py-5 text-center font-black text-base ${item["Variación Stock"] < 0 ? 'text-rose-600' : item["Variación Stock"] > 0 ? 'text-amber-600' : 'text-slate-400'}`}>
-                      {item["Variación Stock"]}
-                    </td>
-                    <td className={`px-6 py-5 text-right font-black text-lg ${item.Cobro > 0 ? 'text-slate-900 bg-emerald-50/30' : 'text-slate-300'} border-l-2 border-emerald-100`}>
-                      {formatCurrency(item.Cobro)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {itemsToDisplay.length === 0 ? (
-            <div className="py-24 text-center border-2 border-dashed border-slate-100 rounded-3xl mt-6">
-              <i className="fa-solid fa-filter text-6xl text-slate-200 mb-6 block"></i>
-              <p className="text-slate-400 font-black uppercase tracking-widest text-sm">
-                No hay registros para mostrar con el filtro: <span className="text-emerald-500">{selectedEstado}</span>
+          {/* RESUMEN DE FILTROS APLICADOS */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-5 bg-white border border-slate-200 rounded-2xl shadow-sm">
+            <div>
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Punto de Venta:</p>
+              <p className="text-xs font-black text-emerald-600 uppercase truncate">{selectedSede}</p>
+            </div>
+            <div>
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Centro de Costos:</p>
+              <p className="text-xs font-black text-slate-700 uppercase truncate">{selectedCentroCosto}</p>
+            </div>
+            <div>
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Estado Filtro:</p>
+              <p className="text-xs font-black text-slate-700 uppercase truncate">{selectedEstado}</p>
+            </div>
+            <div>
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Periodo:</p>
+              <p className="text-xs font-black text-slate-700 uppercase truncate">
+                {startDate || 'Inicio'} / {endDate || 'Fin'}
               </p>
             </div>
-          ) : (
-            <div className="mt-12 flex justify-end">
-              <div className="bg-slate-900 p-8 rounded-[32px] text-right shadow-2xl min-w-[400px]">
-                <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2">Total Liquidación Seleccionada</p>
-                <p className="text-5xl font-black text-white tracking-tighter">
-                  {formatCurrency(totalCobro)}
-                </p>
-                <div className="mt-6 pt-6 border-t border-white/10 flex items-center justify-end gap-2 text-emerald-400">
-                  <i className="fa-solid fa-check-circle"></i>
-                  <p className="text-[10px] font-black uppercase tracking-widest">Cálculos Auditados - Prompt Maestro</p>
-                </div>
-              </div>
-            </div>
-          )}
+          </div>
+        </div>
 
-          {/* ÁREA DE FIRMAS */}
-          <div className="mt-32 grid grid-cols-2 gap-24 px-6">
-            <div className="text-center space-y-4">
-              <div className="h-0.5 bg-slate-900 w-full mb-6 opacity-20"></div>
-              <p className="text-[10px] font-black text-slate-900 uppercase tracking-widest leading-none">Responsable Operativo</p>
-              <p className="text-[9px] text-slate-400 font-bold uppercase italic">Firma del Administrador de Sede</p>
+        <div className="p-10">
+          <table className="w-full text-left mb-10 border-separate border-spacing-0">
+            <thead>
+              <tr className="border-b-2 border-slate-800 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                <th className="py-4 border-b-2 border-slate-800">Descripción de Ítem</th>
+                <th className="py-4 text-center border-b-2 border-slate-800">Faltante</th>
+                <th className="py-4 text-right border-b-2 border-slate-800">Costo Ajuste</th>
+                <th className="py-4 text-right border-b-2 border-slate-800">Valor a Cobrar</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {itemsToCharge.map((item) => (
+                <tr key={item.id} className="text-sm">
+                  <td className="py-5">
+                    <p className="font-black text-slate-800 uppercase leading-none mb-1">{item.Artículo}</p>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase">{item.Subartículo} • {item["Centro de Costos"]}</p>
+                  </td>
+                  <td className="py-5 text-center font-black text-slate-600">
+                    {Math.abs(item["Variación Stock"])}
+                  </td>
+                  <td className="py-5 text-right font-bold text-slate-400 italic">
+                    {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(Math.abs(item["Costo Ajuste"]))}
+                  </td>
+                  <td className="py-5 text-right font-black text-rose-600 text-lg">
+                    {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(item.Cobro)}
+                  </td>
+                </tr>
+              ))}
+              {itemsToCharge.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="py-20 text-center text-slate-300 font-black uppercase tracking-widest text-sm">
+                    No se registran cobros pendientes para los criterios seleccionados.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colSpan={3} className="py-6 text-right font-black text-slate-400 uppercase text-xs tracking-widest">Total Liquidación:</td>
+                <td className="py-6 text-right font-black text-3xl text-slate-800 tracking-tighter">
+                  {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(totalCobro)}
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+
+          <div className="mt-24 flex flex-wrap gap-20">
+            <div className="flex-1 min-w-[200px] border-t-2 border-slate-200 pt-5">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-10">Firma Administrador Sede</p>
+              <div className="border-b border-dashed border-slate-300 h-8"></div>
+              <p className="text-[9px] text-slate-300 font-bold mt-2">Nombre y Cédula</p>
             </div>
-            <div className="text-center space-y-4">
-              <div className="h-0.5 bg-slate-900 w-full mb-6 opacity-20"></div>
-              <p className="text-[10px] font-black text-slate-900 uppercase tracking-widest leading-none">Auditoría & Control</p>
-              <p className="text-[9px] text-slate-400 font-bold uppercase italic">Verificación de Inventarios</p>
+            <div className="flex-1 min-w-[200px] border-t-2 border-slate-200 pt-5">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-10">Firma Auditoría Central</p>
+              <div className="border-b border-dashed border-slate-300 h-8"></div>
+              <p className="text-[9px] text-slate-300 font-bold mt-2">Soporte Verificado</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-slate-900 py-8 px-12 flex justify-between items-center text-white">
-          <p className="text-[9px] font-black uppercase tracking-[0.4em] opacity-50">Generado por Reliability Pro - Sistema de Confiabilidad</p>
-          <div className="flex gap-4">
-             <i className="fa-solid fa-shield-halved text-2xl opacity-20"></i>
-          </div>
+        <div className="bg-slate-50 p-8 text-[10px] text-slate-400 uppercase font-black text-center tracking-[0.3em]">
+          *** DOCUMENTO GENERADO AUTOMÁTICAMENTE POR PROMPT MAESTRO - RELIABILITY PRO ***
         </div>
       </div>
     </div>

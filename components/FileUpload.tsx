@@ -32,34 +32,29 @@ const FileUpload: React.FC<FileUploadProps> = ({ onDataLoaded, showFull = true }
   };
 
   const loadSampleData = () => {
-    const sampleData: any[] = [
+    const sampleData: InventoryRawRow[] = [
       {
-        "Fecha Doc": "2024-03-01", "Almacén": "Sede Norte", "Artículo": "Whisky Buchanans", "Subartículo": "Botella 750ml", "Unidad de Inventario": "ONZA",
+        "Fecha Doc": "2024-03-01", "Almacén": "Sede Norte", "Artículo": "Whisky Buchanans", "Subartículo": "Botella 750ml",
         "Stock a Fecha": 100, "Stock Inventario": 98, "Variación Stock": -2, "Costo Ajuste": -150000, "Cobro": 150000, "Estado": "Faltante",
         "Serie": "A", "Número": "101", "Centro de Costos": "Bar", "Subfamilia": "Licores", "Coste Línea": 75000
       },
       {
-        "Fecha Doc": "2024-03-01", "Almacén": "Sede Sur", "Artículo": "Solomito Res", "Subartículo": "Corte premium", "Unidad de Inventario": "GRAMOS",
-        "Stock a Fecha": 5000, "Stock Inventario": 4800, "Variación Stock": -200, "Costo Ajuste": -45000, "Cobro": 45000, "Estado": "Faltante",
-        "Serie": "A", "Número": "102", "Centro de Costos": "Cocina", "Subfamilia": "Carnes", "Coste Línea": 225
+        "Fecha Doc": "2024-03-01", "Almacén": "Sede Sur", "Artículo": "Solomito Res", "Subartículo": "Kilo",
+        "Stock a Fecha": 50, "Stock Inventario": 51, "Variación Stock": 1, "Costo Ajuste": 45000, "Cobro": 0, "Estado": "Sobrante",
+        "Serie": "A", "Número": "102", "Centro de Costos": "Cocina", "Subfamilia": "Carnes", "Coste Línea": 45000
       },
       {
-        "Fecha Doc": "2024-03-02", "Almacén": "Sede Norte", "Artículo": "Salmon", "Subartículo": "Filete", "Unidad de Inventario": "UNIDADES",
+        "Fecha Doc": "2024-03-02", "Almacén": "Sede Norte", "Artículo": "Salmon", "Subartículo": "Porción",
         "Stock a Fecha": 20, "Stock Inventario": 15, "Variación Stock": -5, "Costo Ajuste": -250000, "Cobro": 250000, "Estado": "Faltante",
         "Serie": "A", "Número": "103", "Centro de Costos": "Cocina", "Subfamilia": "Pescados", "Coste Línea": 50000
       },
       {
-        "Fecha Doc": "2024-03-02", "Almacén": "Sede Central", "Artículo": "Cerveza Corona", "Subartículo": "Botella", "Unidad de Inventario": "UNIDADES",
+        "Fecha Doc": "2024-03-02", "Almacén": "Sede Central", "Artículo": "Cerveza Corona", "Subartículo": "Botella",
         "Stock a Fecha": 200, "Stock Inventario": 200, "Variación Stock": 0, "Costo Ajuste": 0, "Cobro": 0, "Estado": "Sin novedad",
         "Serie": "A", "Número": "104", "Centro de Costos": "Bar", "Subfamilia": "Cervezas", "Coste Línea": 4500
-      },
-      {
-         "Fecha Doc": "2024-03-02", "Almacén": "Sede Norte", "Artículo": "Vino Merlot", "Subartículo": "Botella 750ml", "Unidad de Inventario": "COPA",
-         "Stock a Fecha": 12, "Stock Inventario": 11, "Variación Stock": -1, "Costo Ajuste": -83000, "Cobro": 83000, "Estado": "Faltante",
-         "Serie": "A", "Número": "105", "Centro de Costos": "Bar", "Subfamilia": "Vinos", "Coste Línea": 83000
       }
     ];
-    onDataLoaded(sampleData as InventoryRawRow[]);
+    onDataLoaded(sampleData);
   };
 
   const triggerUpload = () => {
