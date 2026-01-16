@@ -101,7 +101,7 @@ const CobrosReport: React.FC<CobrosReportProps> = ({
             <table className="w-full text-left">
               <thead>
                 <tr className="bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest">
-                  <th className="px-6 py-5">Descripción del Artículo / Subartículo</th>
+                  <th className="px-6 py-5">Descripción del Artículo</th>
                   <th className="px-6 py-5 text-center">Unidad (Inventario)</th>
                   <th className="px-6 py-5 text-center">Variación</th>
                   <th className="px-6 py-5 text-right bg-emerald-600">Valor Cobro</th>
@@ -113,7 +113,7 @@ const CobrosReport: React.FC<CobrosReportProps> = ({
                     <td className="px-6 py-5">
                       <p className="font-black text-slate-900 uppercase leading-none mb-1">{item.Artículo}</p>
                       <div className="flex items-center gap-2">
-                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">{item.Subartículo} • {item["Centro de Costos"]}</p>
+                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">{item["Centro de Costos"]}</p>
                         <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded border ${
                           item.Estado === 'Faltantes' ? 'bg-rose-50 border-rose-100 text-rose-500' :
                           item.Estado === 'Sobrantes' ? 'bg-amber-50 border-amber-100 text-amber-500' :
@@ -124,7 +124,8 @@ const CobrosReport: React.FC<CobrosReportProps> = ({
                       </div>
                     </td>
                     <td className="px-6 py-5 text-center font-bold text-slate-500 uppercase tracking-tighter">
-                      {item.Unidad}
+                      {/* Se utiliza Subartículo para la columna Unidad ya que es donde se encuentra la información de medida según el origen de datos actual */}
+                      {item.Subartículo || item.Unidad}
                     </td>
                     <td className={`px-6 py-5 text-center font-black text-base ${item["Variación Stock"] < 0 ? 'text-rose-600' : item["Variación Stock"] > 0 ? 'text-amber-600' : 'text-slate-400'}`}>
                       {item["Variación Stock"]}
