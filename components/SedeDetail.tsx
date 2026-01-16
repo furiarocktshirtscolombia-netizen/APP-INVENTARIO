@@ -62,7 +62,7 @@ const SedeDetail: React.FC<SedeDetailProps> = ({ data, selectedSede }) => {
                   </td>
                   <td className="px-4 py-4 text-center font-bold text-slate-600 print:px-1">{item["Stock a Fecha"]}</td>
                   <td className="px-4 py-4 text-center font-bold text-slate-600 print:px-1">{item["Stock Inventario"]}</td>
-                  <td className={`px-4 py-4 text-center font-black print:px-1 ${item.Estado === 'Faltantes' ? 'text-rose-600' : item.Estado === 'Sobrantes' ? 'text-amber-600' : 'text-emerald-600'}`}>
+                  <td className={`px-4 py-4 text-center font-black print:px-1 ${item.Estado_Normalizado === 'Faltantes' ? 'text-rose-600' : item.Estado_Normalizado === 'Sobrantes' ? 'text-amber-600' : 'text-emerald-600'}`}>
                     {item["Variación Stock"]}
                   </td>
                   <td className={`px-4 py-4 text-right font-black print:px-1 ${costoAjuste < 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
@@ -76,11 +76,11 @@ const SedeDetail: React.FC<SedeDetailProps> = ({ data, selectedSede }) => {
                   </td>
                   <td className="px-4 py-4 text-center print:px-1">
                     <span className={`px-2 py-1 rounded text-[8px] font-black uppercase ${
-                      item.Estado === 'Faltantes' ? 'bg-rose-50 text-rose-600' : 
-                      item.Estado === 'Sobrantes' ? 'bg-amber-50 text-amber-600' : 
+                      item.Estado_Normalizado === 'Faltantes' ? 'bg-rose-50 text-rose-600' : 
+                      item.Estado_Normalizado === 'Sobrantes' ? 'bg-amber-50 text-amber-600' : 
                       'bg-emerald-50 text-emerald-600'
                     }`}>
-                      {item.Estado.substring(0,4)}
+                      {item.Estado_Normalizado.substring(0,4)}
                     </span>
                   </td>
                 </tr>

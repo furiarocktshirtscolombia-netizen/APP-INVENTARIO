@@ -23,6 +23,7 @@ export interface ProcessedItem extends InventoryRawRow {
   reliability: number; // 0 o 1
   id: string;
   Fecha_Operativa: string;
+  Estado_Normalizado: string; // Campo normalizado solicitado
 }
 
 export interface SedeMetrics {

@@ -32,7 +32,7 @@ const App: React.FC = () => {
       result = result.filter(item => item["Centro de Costos"] === selectedCentroCosto);
     }
     if (selectedEstado !== 'Todos') {
-      result = result.filter(item => item.Estado === selectedEstado);
+      result = result.filter(item => item.Estado_Normalizado === selectedEstado);
     }
     
     if (filterMode === 'Día') {
@@ -230,7 +230,7 @@ const App: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredData.filter(i => i.Cobro > 0).map(item => (
+              {filteredData.map(item => (
                 <tr key={item.id} className="border-b border-slate-100">
                   <td className="p-4">
                     <p className="font-black uppercase text-xs">{item.Artículo}</p>
@@ -263,7 +263,6 @@ const App: React.FC = () => {
             </thead>
             <tbody>
               {[...filteredData]
-                .filter(i => i.Estado !== 'Sin Novedad')
                 .sort((a,b) => b.Cobro - a.Cobro)
                 .map(item => (
                 <tr key={item.id} className="border-b border-slate-100">
@@ -337,7 +336,7 @@ const App: React.FC = () => {
                   </select>
                 </div>
                 <div className="flex flex-col">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Estado</label>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Estado (Normalizado)</label>
                   <select className="bg-white border-2 border-slate-200 rounded-2xl px-5 py-3 text-xs font-black text-slate-700 shadow-sm min-w-[140px]" value={selectedEstado} onChange={(e) => setSelectedEstado(e.target.value)}>
                     <option value="Todos">Todos</option>
                     <option value="Faltantes">Faltantes</option>

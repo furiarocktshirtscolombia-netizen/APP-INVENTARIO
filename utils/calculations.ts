@@ -94,6 +94,8 @@ export const processInventoryData = (data: any[]): ProcessedItem[] => {
       }
     }
 
+    const estadoNormalizado = normalizeEstado(row["Estado"], variacion);
+
     return {
       ...row,
       id: `${almacen}-${articulo}-${index}`,
@@ -107,7 +109,8 @@ export const processInventoryData = (data: any[]): ProcessedItem[] => {
       "Cobro": cobro,
       "Costo Ajuste": costoAjuste,
       "Unidad": unidad || "UND",
-      "Estado": normalizeEstado(row["Estado"], variacion),
+      "Estado": estadoNormalizado, // Mantenemos compatibilidad
+      "Estado_Normalizado": estadoNormalizado, // Nuevo campo solicitado
       "Fecha_Operativa": fechaOperativa,
       "Fecha Doc": fechaOperativa,
       reliability
@@ -143,8 +146,8 @@ export const aggregateSedeMetrics = (processedData: ProcessedItem[]): SedeMetric
       }
       totalCobro += item.Cobro;
       totalCostoAjuste += item["Costo Ajuste"];
-      if (item.Estado === 'Faltantes') totalFaltantes++;
-      else if (item.Estado === 'Sobrantes') totalSobrantes++;
+      if (item.Estado_Normalizado === 'Faltantes') totalFaltantes++;
+      else if (item.Estado_Normalizado === 'Sobrantes') totalSobrantes++;
     });
 
     const ccMetrics: Record<string, { reliability: number; count: number }> = {};

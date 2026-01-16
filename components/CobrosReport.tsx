@@ -19,9 +19,14 @@ const CobrosReport: React.FC<CobrosReportProps> = ({
   startDate,
   endDate
 }) => {
-  // Solo mostramos ítems que generan cobro
-  const itemsToCharge = data.filter(item => item.Cobro > 0);
-  const totalCobro = itemsToCharge.reduce((acc, item) => acc + item.Cobro, 0);
+  /**
+   * CORRECCIÓN: El Informe de Cobros debe usar exactamente los datos que le llegan (data), 
+   * los cuales ya vienen filtrados globalmente en App.tsx por Estado_Normalizado.
+   * Eliminamos el filtro restrictivo Cobro > 0 para que si el usuario selecciona 'Sin Novedad',
+   * el informe muestre los ítems correspondientes y no quede en blanco.
+   */
+  const itemsToCharge = data;
+  const totalCobro = itemsToCharge.reduce((acc, item) => acc + (item.Cobro || 0), 0);
 
   const formatCurrency = (val: number) => 
     new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(val);
@@ -83,19 +88,19 @@ const CobrosReport: React.FC<CobrosReportProps> = ({
             </thead>
             <tbody className="divide-y divide-slate-100">
               {itemsToCharge.map((item) => {
-                // Según requerimiento: La descripción queda limpia y enfocada solo en el nombre.
-                // Se ocultan las unidades de la descripción secundaria para que solo aparezcan en la columna Unidad.
                 return (
                   <tr key={item.id} className="text-sm group hover:bg-slate-50 transition-colors">
                     <td className="px-6 py-5">
                       <p className="font-black text-slate-800 uppercase leading-tight mb-1">{item.Artículo}</p>
                       <div className="flex flex-wrap items-center gap-2">
-                        {/* Se eliminó el renderizado del Subartículo aquí para limpiar la descripción 
-                            ya que el Subartículo suele ser la Unidad identificada (ej. ONZA) */}
                         <p className="text-[10px] text-slate-500 font-bold uppercase">{item["Centro de Costos"]}</p>
                         <span className="text-slate-300 text-[10px]">•</span>
-                        <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase ${item.Estado === 'Faltantes' ? 'bg-rose-50 text-rose-600' : 'bg-amber-50 text-amber-600'}`}>
-                          {item.Estado}
+                        <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase ${
+                          item.Estado_Normalizado === 'Faltantes' ? 'bg-rose-50 text-rose-600' : 
+                          item.Estado_Normalizado === 'Sobrantes' ? 'bg-amber-50 text-amber-600' : 
+                          'bg-emerald-50 text-emerald-600'
+                        }`}>
+                          {item.Estado_Normalizado}
                         </span>
                       </div>
                     </td>
@@ -104,11 +109,11 @@ const CobrosReport: React.FC<CobrosReportProps> = ({
                         {item.Unidad || '-'}
                       </span>
                     </td>
-                    <td className="px-6 py-5 text-center font-black text-rose-600 text-lg">
+                    <td className={`px-6 py-5 text-center font-black text-lg ${item.Estado_Normalizado === 'Sin Novedad' ? 'text-slate-300' : 'text-rose-600'}`}>
                       {Math.abs(item["Variación Stock"])}
                     </td>
                     <td className="px-6 py-5 text-right font-black text-slate-800 text-lg bg-emerald-50/30 group-hover:bg-emerald-50 transition-colors">
-                      {formatCurrency(item.Cobro)}
+                      {item.Cobro > 0 ? formatCurrency(item.Cobro) : '-'}
                     </td>
                   </tr>
                 );
@@ -116,14 +121,14 @@ const CobrosReport: React.FC<CobrosReportProps> = ({
               {itemsToCharge.length === 0 && (
                 <tr>
                   <td colSpan={4} className="py-20 text-center text-slate-300 font-black uppercase tracking-widest text-sm italic">
-                    No hay ítems con cobros registrados para este reporte.
+                    No hay ítems con los criterios seleccionados para este reporte.
                   </td>
                 </tr>
               )}
             </tbody>
             <tfoot>
               <tr>
-                <td colSpan={3} className="px-6 py-10 text-right font-black text-slate-400 uppercase text-xs tracking-widest pr-10">Total Liquidación de Nómina:</td>
+                <td colSpan={3} className="px-6 py-10 text-right font-black text-slate-400 uppercase text-xs tracking-widest pr-10">Total Reportado:</td>
                 <td className="px-6 py-10 text-right font-black text-4xl text-slate-900 tracking-tighter border-t-4 border-emerald-600">
                   {formatCurrency(totalCobro)}
                 </td>

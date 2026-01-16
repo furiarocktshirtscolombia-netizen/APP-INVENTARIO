@@ -7,7 +7,8 @@ interface CriticalItemsProps {
 }
 
 const CriticalItems: React.FC<CriticalItemsProps> = ({ data }) => {
-  const deviations = data.filter(item => item.Estado !== 'Sin Novedad');
+  // Filtramos para asegurar que solo mostramos desviaciones si el filtro global no lo ha hecho ya
+  const deviations = data.filter(item => item.Estado_Normalizado !== 'Sin Novedad');
   
   const sortedCriticalItems = [...deviations].sort((a, b) => {
     const absCobroA = Math.abs(a.Cobro || 0);
@@ -58,8 +59,8 @@ const CriticalItems: React.FC<CriticalItemsProps> = ({ data }) => {
                     <td className="px-6 py-4 font-black text-slate-400 print:text-slate-900">{idx + 1}</td>
                     <td className="px-6 py-4">
                       <p className="font-black text-slate-800 uppercase leading-none">{item.Artículo}</p>
-                      <p className={`text-[8px] font-black uppercase mt-1 ${item.Estado === 'Faltantes' ? 'text-rose-600' : 'text-amber-600'}`}>
-                        {item.Estado}
+                      <p className={`text-[8px] font-black uppercase mt-1 ${item.Estado_Normalizado === 'Faltantes' ? 'text-rose-600' : 'text-amber-600'}`}>
+                        {item.Estado_Normalizado}
                       </p>
                     </td>
                     <td className="px-6 py-4">
