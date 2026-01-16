@@ -181,7 +181,7 @@ const App: React.FC = () => {
       <div className="grid grid-cols-4 gap-6 p-6 bg-slate-50 border-2 border-slate-200 rounded-3xl mb-12">
         <div><p className="text-[9px] font-black text-slate-400 uppercase">Sede:</p><p className="font-black text-sm uppercase">{selectedSede}</p></div>
         <div><p className="text-[9px] font-black text-slate-400 uppercase">C. Costo:</p><p className="font-black text-sm uppercase">{selectedCentroCosto}</p></div>
-        <div><p className="text-[9px] font-black text-slate-400 uppercase">Periodo:</p><p className="font-black text-sm uppercase">{startDate || 'Todo el registro'}</p></div>
+        <div><p className="text-[9px] font-black text-slate-400 uppercase">Estado:</p><p className="font-black text-sm uppercase">{selectedEstado}</p></div>
         <div><p className="text-[9px] font-black text-slate-400 uppercase">Ítems:</p><p className="font-black text-sm uppercase">{filteredData.length}</p></div>
       </div>
 
@@ -334,6 +334,15 @@ const App: React.FC = () => {
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Centro de Costo</label>
                   <select className="bg-white border-2 border-slate-200 rounded-2xl px-5 py-3 text-xs font-black text-slate-700 shadow-sm min-w-[150px]" value={selectedCentroCosto} onChange={(e) => setSelectedCentroCosto(e.target.value)}>
                     {centroCostoList.map(cc => <option key={cc} value={cc}>{cc}</option>)}
+                  </select>
+                </div>
+                <div className="flex flex-col">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Estado</label>
+                  <select className="bg-white border-2 border-slate-200 rounded-2xl px-5 py-3 text-xs font-black text-slate-700 shadow-sm min-w-[140px]" value={selectedEstado} onChange={(e) => setSelectedEstado(e.target.value)}>
+                    <option value="Todos">Todos</option>
+                    <option value="Faltantes">Faltantes</option>
+                    <option value="Sobrantes">Sobrantes</option>
+                    <option value="Sin Novedad">Sin Novedad</option>
                   </select>
                 </div>
                 <div className="flex flex-col">
