@@ -3,16 +3,15 @@ import { InventoryRawRow, ProcessedItem, SedeMetrics } from '../types';
 
 /**
  * Función de utilidad para limpiar y convertir strings de moneda a números.
- * Implementa la lógica: REPLACE($, ''), REPLACE(., ''), REPLACE(',', '.')
  */
 const parseCurrency = (val: any): number => {
   if (typeof val === 'number') return val;
   if (!val || String(val).trim() === '-' || String(val).trim() === '') return 0;
   
   const cleaned = String(val)
-    .replace(/\$/g, '')      // Quita el signo de peso
-    .replace(/\./g, '')      // Quita puntos de miles
-    .replace(/,/g, '.')      // Cambia coma decimal por punto
+    .replace(/\$/g, '')      
+    .replace(/\./g, '')      
+    .replace(/,/g, '.')      
     .trim();
     
   const num = parseFloat(cleaned);
@@ -20,8 +19,7 @@ const parseCurrency = (val: any): number => {
 };
 
 /**
- * Nueva lógica de Confiabilidad por Ítem:
- * 1 si Variación = 0, 0 en caso contrario.
+ * Lógica de Confiabilidad por Ítem: 1 si Variación = 0, 0 en caso contrario.
  */
 export const calculateItemReliability = (row: InventoryRawRow): number => {
   const variacion = Number(row["Variación Stock"]) || 0;
@@ -58,7 +56,6 @@ export const processInventoryData = (data: any[]): ProcessedItem[] => {
     const stockFisico = Number(row["Stock Inventario"]) || 0;
     const variacion = Number(row["Variación Stock"]) ?? (stockFisico - stockSistema);
     
-    // Priorización del campo real de inventario solicitado
     const unidad = String(
       row["Unidad de Inventario"] || 
       row["Unidad de Medida"] || 
@@ -70,8 +67,10 @@ export const processInventoryData = (data: any[]): ProcessedItem[] => {
     
     const estadoNormalizado = normalizeEstado(row["Estado"], variacion);
 
-    // Parsing robusto de valores financieros (Cobro_Num)
-    const cobroParsed = parseCurrency(row["Cobro"]);
+    // Búsqueda robusta de columna de cobro según requerimiento
+    const cobroRaw = row["Valor Cobro"] ?? row["Cobro_Num"] ?? row["Cobro"] ?? 0;
+    const cobroParsed = parseCurrency(cobroRaw);
+    
     const costeLinea = parseCurrency(row["Coste Línea"]);
     const costoAjusteParsed = row["Costo Ajuste"] !== undefined ? parseCurrency(row["Costo Ajuste"]) : (variacion * costeLinea);
 
@@ -125,7 +124,6 @@ export const aggregateSedeMetrics = (processedData: ProcessedItem[]): SedeMetric
 
     return {
       almacen,
-      // (SUM(Item_Sin_Variacion) / SUM(Total_Item)) * 100
       globalReliability: items.length > 0 ? (reliableCount / items.length) * 100 : 100,
       totalCobro,
       totalFaltantes,
