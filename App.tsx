@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { ViewType, ProcessedItem, InventoryRawRow, FilterMode } from './types';
 import { processInventoryData, aggregateSedeMetrics } from './utils/calculations';
 import Dashboard from './components/Dashboard';
@@ -64,38 +64,53 @@ const App: React.FC = () => {
     setActiveView('dashboard');
   };
 
-  const handleExportPDF = () => {
+  /**
+   * ACCIÓN REAL DE EXPORTACIÓN
+   * Configura el entorno para la impresión a PDF.
+   */
+  const handleExportPDF = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
     const dateStr = new Date().toISOString().split('T')[0];
     const originalTitle = document.title;
+    
     // Nombre de archivo sugerido: Inventario_Sede_Seccion_Fecha.pdf
-    document.title = `Inventario_${selectedSede.replace(/\s+/g, '_')}_${activeView.toUpperCase()}_${dateStr}`;
+    const fileName = `Inventario_${selectedSede.replace(/\s+/g, '_')}_${activeView.toUpperCase()}_${dateStr}`;
+    document.title = fileName;
     
-    window.print();
+    console.log(`Iniciando exportación PDF: ${fileName}`);
     
-    // Restaurar título original después de que se abra el diálogo de impresión
+    // Pequeño delay para asegurar que el DOM esté listo y el título actualizado
     setTimeout(() => {
-      document.title = originalTitle;
-    }, 500);
+      window.print();
+      // Restaurar título
+      setTimeout(() => {
+        document.title = originalTitle;
+      }, 1000);
+    }, 150);
   };
 
   return (
     <div className="flex flex-col min-h-screen bg-slate-50/50 print:bg-white">
-      {/* ESTILOS GLOBALES DE IMPRESIÓN */}
+      {/* MEJORA DE ESTILOS DE IMPRESIÓN PARA EVITAR PDF VACÍOS */}
       <style>{`
         @media print {
-          @page { margin: 1cm; size: auto; }
-          body { background: white !important; }
+          @page { margin: 1.5cm; size: auto; }
+          html, body { 
+            height: auto !important; 
+            overflow: visible !important; 
+            background: white !important; 
+          }
           .no-print { display: none !important; }
           .print-block { display: block !important; }
-          .print-flex { display: flex !important; }
-          .print-grid { display: grid !important; }
-          .shadow-xl, .shadow-2xl, .shadow-sm { box-shadow: none !important; }
-          .border-2 { border-width: 1px !important; }
-          .rounded-[40px], .rounded-3xl { border-radius: 12px !important; }
-          table { width: 100% !important; table-layout: auto !important; border-collapse: collapse !important; }
-          .overflow-x-auto { overflow: visible !important; }
-          .min-w-[1300px] { min-width: 0 !important; }
-          .bg-slate-50\/50, .bg-slate-50 { background-color: #f8fafc !important; -webkit-print-color-adjust: exact; }
+          table { width: 100% !important; border-collapse: collapse !important; }
+          th, td { border-bottom: 1px solid #e2e8f0 !important; }
+          .shadow-xl, .shadow-2xl { box-shadow: none !important; }
+          .rounded-[40px], .rounded-2xl { border-radius: 8px !important; }
+          /* Forzar visibilidad del contenido activo */
+          main { display: block !important; overflow: visible !important; }
+          .bg-emerald-600 { background-color: #059669 !important; -webkit-print-color-adjust: exact; }
           .text-emerald-600 { color: #059669 !important; -webkit-print-color-adjust: exact; }
           .text-rose-600 { color: #e11d48 !important; -webkit-print-color-adjust: exact; }
         }
@@ -119,7 +134,7 @@ const App: React.FC = () => {
               <button 
                 type="button"
                 onClick={handleExportPDF}
-                className="flex items-center gap-2 px-6 py-2.5 bg-slate-800 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-900 transition-all shadow-md active:scale-95"
+                className="flex items-center gap-2 px-6 py-2.5 bg-slate-800 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-900 transition-all shadow-md active:scale-95 cursor-pointer z-[60]"
               >
                 <i className="fa-solid fa-file-pdf"></i>
                 Exportar PDF
@@ -128,6 +143,7 @@ const App: React.FC = () => {
           </div>
         </div>
 
+        {/* Filtros Globales */}
         <div className="bg-slate-50 border-t border-slate-200 py-6">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-wrap gap-x-6 gap-y-4 items-end">
              <div className="flex flex-col">
@@ -204,7 +220,7 @@ const App: React.FC = () => {
         </div>
       </div>
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10 print:py-0">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10 print:py-0 overflow-visible">
         {data.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-[60vh] text-slate-400 no-print">
             <i className="fa-solid fa-file-excel text-8xl mb-6 text-emerald-600 opacity-20"></i>

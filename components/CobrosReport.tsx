@@ -19,27 +19,17 @@ const CobrosReport: React.FC<CobrosReportProps> = ({
   startDate,
   endDate
 }) => {
+  // Solo mostramos ítems que generan cobro
   const itemsToCharge = data.filter(item => item.Cobro > 0);
   const totalCobro = itemsToCharge.reduce((acc, item) => acc + item.Cobro, 0);
 
-  const handlePrint = () => {
-    window.print();
-  };
+  const formatCurrency = (val: number) => 
+    new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(val);
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 print:m-0 print:p-0">
-      <div className="flex justify-between items-center print:hidden">
-        <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight">Informe de Cobros Personalizado</h2>
-        <button 
-          onClick={handlePrint}
-          className="bg-slate-800 text-white px-5 py-2.5 rounded-xl text-sm font-black uppercase tracking-tighter flex items-center gap-2 hover:bg-slate-900 transition-all shadow-md active:scale-95"
-        >
-          <i className="fa-solid fa-print"></i>
-          Imprimir Reporte
-        </button>
-      </div>
-
       <div className="bg-white border border-slate-200 shadow-xl rounded-2xl overflow-hidden print:border-none print:shadow-none">
+        {/* Cabecera del Reporte */}
         <div className="p-10 border-b border-slate-100 bg-slate-50/30">
           <div className="flex justify-between items-start mb-8">
             <div className="flex items-center gap-4">
@@ -57,6 +47,7 @@ const CobrosReport: React.FC<CobrosReportProps> = ({
             </div>
           </div>
 
+          {/* Filtros Aplicados */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-5 bg-white border border-slate-200 rounded-2xl shadow-sm">
             <div>
               <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Punto de Venta:</p>
@@ -79,70 +70,78 @@ const CobrosReport: React.FC<CobrosReportProps> = ({
           </div>
         </div>
 
+        {/* Cuerpo de la Tabla */}
         <div className="p-10">
           <table className="w-full text-left mb-10 border-separate border-spacing-0">
             <thead>
-              <tr className="border-b-2 border-slate-800 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                <th className="py-4 border-b-2 border-slate-800">Descripción de Ítem</th>
-                <th className="py-4 border-b-2 border-slate-800 text-center">Unidad Inventario</th>
-                <th className="py-4 text-center border-b-2 border-slate-800">Variación</th>
-                <th className="py-4 text-right border-b-2 border-slate-800">Costo Ajuste</th>
-                <th className="py-4 text-right border-b-2 border-slate-800">Valor a Cobrar</th>
+              <tr className="bg-slate-900 text-white text-[9px] font-black uppercase tracking-widest">
+                <th className="px-6 py-4 rounded-tl-xl">Descripción del Artículo / Subartículo</th>
+                <th className="px-6 py-4 text-center">Unidad (Inventario)</th>
+                <th className="px-6 py-4 text-center">Variación</th>
+                <th className="px-6 py-4 text-right rounded-tr-xl bg-emerald-600">Valor Cobro</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {itemsToCharge.map((item) => (
-                <tr key={item.id} className="text-sm">
-                  <td className="py-5">
-                    <p className="font-black text-slate-800 uppercase leading-none mb-1">{item.Artículo}</p>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase">
-                      {item.Subartículo} • <span className="text-slate-500">{item["Centro de Costos"]}</span>
-                    </p>
-                  </td>
-                  <td className="py-5 text-center">
-                    <span className="px-3 py-1 bg-slate-100 rounded-lg text-[10px] font-black text-slate-600 uppercase tracking-widest">
-                      {item.Unidad || 'N/A'}
-                    </span>
-                  </td>
-                  <td className="py-5 text-center font-black text-slate-600">
-                    {Math.abs(item["Variación Stock"])}
-                  </td>
-                  <td className="py-5 text-right font-bold text-slate-400 italic">
-                    {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(Math.abs(item["Costo Ajuste"]))}
-                  </td>
-                  <td className="py-5 text-right font-black text-rose-600 text-lg">
-                    {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(item.Cobro)}
-                  </td>
-                </tr>
-              ))}
+              {itemsToCharge.map((item) => {
+                // Según requerimiento: La descripción queda limpia y enfocada solo en el nombre.
+                // Se ocultan las unidades de la descripción secundaria para que solo aparezcan en la columna Unidad.
+                return (
+                  <tr key={item.id} className="text-sm group hover:bg-slate-50 transition-colors">
+                    <td className="px-6 py-5">
+                      <p className="font-black text-slate-800 uppercase leading-tight mb-1">{item.Artículo}</p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        {/* Se eliminó el renderizado del Subartículo aquí para limpiar la descripción 
+                            ya que el Subartículo suele ser la Unidad identificada (ej. ONZA) */}
+                        <p className="text-[10px] text-slate-500 font-bold uppercase">{item["Centro de Costos"]}</p>
+                        <span className="text-slate-300 text-[10px]">•</span>
+                        <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase ${item.Estado === 'Faltantes' ? 'bg-rose-50 text-rose-600' : 'bg-amber-50 text-amber-600'}`}>
+                          {item.Estado}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-5 text-center">
+                      <span className="inline-block px-4 py-1.5 bg-slate-800 rounded-lg text-xs font-black text-white uppercase tracking-widest shadow-sm">
+                        {item.Unidad || '-'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-5 text-center font-black text-rose-600 text-lg">
+                      {Math.abs(item["Variación Stock"])}
+                    </td>
+                    <td className="px-6 py-5 text-right font-black text-slate-800 text-lg bg-emerald-50/30 group-hover:bg-emerald-50 transition-colors">
+                      {formatCurrency(item.Cobro)}
+                    </td>
+                  </tr>
+                );
+              })}
               {itemsToCharge.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="py-20 text-center text-slate-300 font-black uppercase tracking-widest text-sm">
-                    No se registran cobros pendientes para los criterios seleccionados.
+                  <td colSpan={4} className="py-20 text-center text-slate-300 font-black uppercase tracking-widest text-sm italic">
+                    No hay ítems con cobros registrados para este reporte.
                   </td>
                 </tr>
               )}
             </tbody>
             <tfoot>
               <tr>
-                <td colSpan={4} className="py-6 text-right font-black text-slate-400 uppercase text-xs tracking-widest pr-4">Total Liquidación:</td>
-                <td className="py-6 text-right font-black text-3xl text-slate-800 tracking-tighter">
-                  {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(totalCobro)}
+                <td colSpan={3} className="px-6 py-10 text-right font-black text-slate-400 uppercase text-xs tracking-widest pr-10">Total Liquidación de Nómina:</td>
+                <td className="px-6 py-10 text-right font-black text-4xl text-slate-900 tracking-tighter border-t-4 border-emerald-600">
+                  {formatCurrency(totalCobro)}
                 </td>
               </tr>
             </tfoot>
           </table>
 
+          {/* Área de Firmas */}
           <div className="mt-24 flex flex-wrap gap-20 print:gap-10">
             <div className="flex-1 min-w-[200px] border-t-2 border-slate-200 pt-5">
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-10">Firma Administrador Sede</p>
               <div className="border-b border-dashed border-slate-300 h-8"></div>
-              <p className="text-[9px] text-slate-300 font-bold mt-2">Nombre y Cédula</p>
+              <p className="text-[9px] text-slate-300 font-bold mt-2 uppercase tracking-tighter">Nombre y Cédula</p>
             </div>
             <div className="flex-1 min-w-[200px] border-t-2 border-slate-200 pt-5">
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-10">Firma Auditoría Central</p>
               <div className="border-b border-dashed border-slate-300 h-8"></div>
-              <p className="text-[9px] text-slate-300 font-bold mt-2">Soporte Verificado</p>
+              <p className="text-[9px] text-slate-300 font-bold mt-2 uppercase tracking-tighter">Soporte Verificado</p>
             </div>
           </div>
         </div>

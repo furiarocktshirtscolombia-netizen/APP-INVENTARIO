@@ -64,6 +64,7 @@ export const processInventoryData = (data: any[]): ProcessedItem[] => {
   return data.map((row, index) => {
     const almacen = String(row["Almacén"] || row["Almacen"] || "Sede Sin Nombre").trim();
     const articulo = String(row["Artículo"] || row["Articulo"] || "Articulo").trim();
+    const subarticulo = String(row["Subartículo"] || row["Subarticulo"] || "").trim();
     const centroCosto = String(row["Centro de Costos"] || "General").trim();
     const stockSistema = Number(row["Stock a Fecha"]) || 0;
     const stockFisico = Number(row["Stock Inventario"]) || 0;
@@ -73,18 +74,39 @@ export const processInventoryData = (data: any[]): ProcessedItem[] => {
     const cobro = parseCurrency(row["Cobro"]);
     const costoAjuste = parseCurrency(row["Costo Ajuste"]);
     const reliability = variacion === 0 ? 1 : 0;
+    
+    // Captura robusta de la Unidad
+    let unidad = String(
+      row["Unidad"] || 
+      row["Unid."] || 
+      row["U.M."] || 
+      row["Unid"] || 
+      row["UNIDAD"] || 
+      ""
+    ).trim().toUpperCase();
+
+    // Lógica de Identificación: Si la unidad está vacía o es genérica, 
+    // pero el subartículo contiene una unidad válida (ej. ONZA), la extraemos.
+    const commonUnits = ["ONZA", "UNIDADES", "GRAMOS", "KG", "GRAMO", "ONZAS", "UND", "UNIDAD", "LT", "LITRO", "BOTELLA"];
+    if ((!unidad || unidad === "-" || unidad === "UND") && subarticulo) {
+      if (commonUnits.includes(subarticulo.toUpperCase())) {
+        unidad = subarticulo.toUpperCase();
+      }
+    }
 
     return {
       ...row,
       id: `${almacen}-${articulo}-${index}`,
       "Almacén": almacen,
       "Artículo": articulo,
+      "Subartículo": subarticulo,
       "Centro de Costos": centroCosto,
       "Stock a Fecha": stockSistema,
       "Stock Inventario": stockFisico,
       "Variación Stock": variacion,
       "Cobro": cobro,
       "Costo Ajuste": costoAjuste,
+      "Unidad": unidad || "UND",
       "Estado": normalizeEstado(row["Estado"], variacion),
       "Fecha_Operativa": fechaOperativa,
       "Fecha Doc": fechaOperativa,
