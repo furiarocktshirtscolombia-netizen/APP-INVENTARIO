@@ -1,79 +1,100 @@
 
 import { InventoryRawRow, ProcessedItem, SedeMetrics } from '../types';
 
-export const calculateItemReliability = (row: InventoryRawRow): number => {
-  const stockSistema = Number(row["Stock a Fecha"]) || 0;
-  const stockFisico = Number(row["Stock Inventario"]) || 0;
-  const variacion = Math.abs(Number(row["Variación Stock"]) || 0);
+/**
+ * NORMALIZACIÓN DE FECHAS
+ * Convierte cualquier formato (Excel serial, ISO, DD/MM/YYYY) a string YYYY-MM-DD.
+ */
+export const normalizeDate = (val: any): string => {
+  if (!val) return '';
   
-  // Formula obligatoria: (1 - (ABS(Variación Stock) / MAX(Stock a Fecha, Stock Inventario, 1))) * 100
-  const maxStock = Math.max(stockSistema, stockFisico, 1);
-  const reliability = 1 - (variacion / maxStock);
-  
-  return Math.max(0, Math.min(1, reliability));
+  let dateObj: Date | null = null;
+
+  if (typeof val === 'number') {
+    // Excel Serial Number
+    dateObj = new Date(Math.round((val - 25569) * 86400 * 1000));
+  } else if (val instanceof Date) {
+    dateObj = val;
+  } else {
+    const str = String(val).trim();
+    if (!str || str === '-') return '';
+
+    // Manejo de formatos comunes DD/MM/YYYY
+    const parts = str.split(/[\/\-]/);
+    if (parts.length === 3) {
+      if (parts[2].length === 4) { // DD/MM/YYYY
+        dateObj = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+      } else if (parts[0].length === 4) { // YYYY/MM/DD
+        dateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+      }
+    }
+    
+    if (!dateObj || isNaN(dateObj.getTime())) {
+      dateObj = new Date(str);
+    }
+  }
+
+  if (dateObj && !isNaN(dateObj.getTime())) {
+    const year = dateObj.getFullYear();
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const day = String(dateObj.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  return '';
 };
 
-export const getTrafficLightColor = (percentage: number): string => {
-  if (percentage >= 95) return 'emerald';
-  if (percentage >= 85) return 'amber';
-  return 'rose';
+export const parseCurrency = (val: any): number => {
+  if (typeof val === 'number') return val;
+  if (!val || String(val).trim() === '-' || String(val).trim() === '') return 0;
+  return parseFloat(String(val).replace(/[^0-9.-]+/g, "")) || 0;
+};
+
+export const normalizeEstado = (estadoRaw: any, variacion: number): string => {
+  const val = String(estadoRaw || "").trim().toUpperCase();
+  if (val === 'FALTANTE' || val === 'FALTANTES') return 'Faltantes';
+  if (val === 'SOBRANTE' || val === 'SOBRANTES') return 'Sobrantes';
+  if (val === 'SIN NOVEDAD' || val === 'SINNOVEDAD') return 'Sin Novedad';
+  if (variacion < 0) return 'Faltantes';
+  if (variacion > 0) return 'Sobrantes';
+  return 'Sin Novedad';
 };
 
 export const processInventoryData = (data: any[]): ProcessedItem[] => {
   return data.map((row, index) => {
-    // Normalización de Almacén
-    const almacen = String(row["Almacén"] || row["Almacen"] || row["Sede"] || "Sede Sin Nombre").trim();
-    const articulo = String(row["Artículo"] || row["Articulo"] || "Artículo Desconocido").trim();
-    const subarticulo = String(row["Subartículo"] || row["Subarticulo"] || "N/A").trim();
-    const centroCosto = String(row["Centro de Costos"] || row["Centro de costo"] || row["CC"] || "General").trim();
-    
-    const stockSistema = Number(row["Stock a Fecha"]) || Number(row["Stock Sistema"]) || 0;
-    const stockFisico = Number(row["Stock Inventario"]) || Number(row["Stock Físico"]) || 0;
+    const almacen = String(row["Almacén"] || row["Almacen"] || "Sede Sin Nombre").trim();
+    const articulo = String(row["Artículo"] || row["Articulo"] || "Articulo").trim();
+    const centroCosto = String(row["Centro de Costos"] || "General").trim();
+    const stockSistema = Number(row["Stock a Fecha"]) || 0;
+    const stockFisico = Number(row["Stock Inventario"]) || 0;
     const variacion = Number(row["Variación Stock"]) ?? (stockFisico - stockSistema);
-    
-    const costeLinea = Number(row["Coste Línea"]) || Number(row["Costo Unitario"]) || 0;
-    const costoAjuste = Number(row["Costo Ajuste"]) ?? (variacion * costeLinea);
-    const cobro = Number(row["Cobro"]) || 0;
+    const rawDate = row["Fecha Doc"] || row["Fecha"] || "";
+    const fechaOperativa = normalizeDate(rawDate);
+    const cobro = parseCurrency(row["Cobro"]);
+    const costoAjuste = parseCurrency(row["Costo Ajuste"]);
+    const reliability = variacion === 0 ? 1 : 0;
 
-    // Normalización de Estado basada estrictamente en los términos del usuario (Columna N)
-    // "Sin Novedad", "Faltantes", "Sobrantes"
-    let estadoOriginal = String(row["Estado"] || "").trim().toLowerCase();
-    let estado = "Sin Novedad";
-    
-    if (estadoOriginal.includes("faltante") || variacion < 0) {
-      estado = "Faltantes";
-    } else if (estadoOriginal.includes("sobrante") || variacion > 0) {
-      estado = "Sobrantes";
-    } else {
-      estado = "Sin Novedad";
-    }
-
-    const sanitizedRow: InventoryRawRow = {
+    return {
       ...row,
+      id: `${almacen}-${articulo}-${index}`,
       "Almacén": almacen,
       "Artículo": articulo,
-      "Subartículo": subarticulo,
       "Centro de Costos": centroCosto,
       "Stock a Fecha": stockSistema,
       "Stock Inventario": stockFisico,
       "Variación Stock": variacion,
-      "Coste Línea": costeLinea,
-      "Costo Ajuste": costoAjuste,
       "Cobro": cobro,
-      "Estado": estado
-    };
-
-    return {
-      ...sanitizedRow,
-      id: `${almacen}-${articulo}-${index}`,
-      reliability: calculateItemReliability(sanitizedRow)
-    };
+      "Costo Ajuste": costoAjuste,
+      "Estado": normalizeEstado(row["Estado"], variacion),
+      "Fecha_Operativa": fechaOperativa,
+      "Fecha Doc": fechaOperativa,
+      reliability
+    } as ProcessedItem;
   });
 };
 
 export const aggregateSedeMetrics = (processedData: ProcessedItem[]): SedeMetrics[] => {
   const map = new Map<string, ProcessedItem[]>();
-  
   processedData.forEach(item => {
     const list = map.get(item.Almacén) || [];
     list.push(item);
@@ -81,29 +102,23 @@ export const aggregateSedeMetrics = (processedData: ProcessedItem[]): SedeMetric
   });
 
   return Array.from(map.entries()).map(([almacen, items]) => {
-    let weightedReliabilitySum = 0;
-    let totalWeight = 0;
+    let perfectItems = 0;
     let totalCobro = 0;
+    let totalCostoAjuste = 0;
     let totalFaltantes = 0;
     let totalSobrantes = 0;
-    let totalCostoAjuste = 0;
 
     items.forEach(item => {
-      const weight = Math.abs(Number(item["Costo Ajuste"]) || 0);
-      const effectiveWeight = weight || 1; 
-      const itemRelPct = item.reliability * 100;
-      weightedReliabilitySum += itemRelPct * effectiveWeight;
-      totalWeight += effectiveWeight;
-      totalCobro += Number(item.Cobro) || 0;
-      totalCostoAjuste += Number(item["Costo Ajuste"]) || 0;
-      const variacion = Number(item["Variación Stock"]) || 0;
-      if (variacion < 0) totalFaltantes++;
-      else if (variacion > 0) totalSobrantes++;
+      if (item.reliability === 1) perfectItems++;
+      totalCobro += item.Cobro;
+      totalCostoAjuste += item["Costo Ajuste"];
+      if (item.Estado === 'Faltantes') totalFaltantes++;
+      else if (item.Estado === 'Sobrantes') totalSobrantes++;
     });
 
     return {
       almacen,
-      globalReliability: totalWeight > 0 ? (weightedReliabilitySum / totalWeight) : 100,
+      globalReliability: items.length > 0 ? (perfectItems / items.length) * 100 : 100,
       totalCobro,
       totalFaltantes,
       totalSobrantes,
@@ -111,4 +126,10 @@ export const aggregateSedeMetrics = (processedData: ProcessedItem[]): SedeMetric
       itemCount: items.length
     };
   });
+};
+
+export const getTrafficLightColor = (percentage: number): string => {
+  if (percentage >= 95) return 'emerald';
+  if (percentage >= 85) return 'amber';
+  return 'rose';
 };

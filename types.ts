@@ -8,6 +8,7 @@ export interface InventoryRawRow {
   "Subfamilia": string;
   "Artículo": string;
   "Subartículo": string;
+  "Unidad": string;
   "Stock a Fecha": number;
   "Stock Inventario": number;
   "Variación Stock": number;
@@ -15,11 +16,13 @@ export interface InventoryRawRow {
   "Costo Ajuste": number;
   "Cobro": number;
   "Estado": string;
+  "Fecha_Operativa"?: string; // Campo normalizado YYYY-MM-DD
 }
 
 export interface ProcessedItem extends InventoryRawRow {
-  reliability: number; // 0 to 1
+  reliability: number; // 0 o 1
   id: string;
+  Fecha_Operativa: string;
 }
 
 export interface SedeMetrics {
@@ -33,3 +36,4 @@ export interface SedeMetrics {
 }
 
 export type ViewType = 'dashboard' | 'detail' | 'cobros' | 'critical';
+export type FilterMode = 'Día' | 'Mes';

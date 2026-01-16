@@ -32,24 +32,25 @@ const FileUpload: React.FC<FileUploadProps> = ({ onDataLoaded, showFull = true }
   };
 
   const loadSampleData = () => {
+    // Fix: Added missing "Unidad" property to satisfy the InventoryRawRow interface
     const sampleData: InventoryRawRow[] = [
       {
-        "Fecha Doc": "2024-03-01", "Almacén": "Sede Norte", "Artículo": "Whisky Buchanans", "Subartículo": "Botella 750ml",
+        "Fecha Doc": "2024-03-01", "Almacén": "Sede Norte", "Artículo": "Whisky Buchanans", "Subartículo": "Botella 750ml", "Unidad": "UND",
         "Stock a Fecha": 100, "Stock Inventario": 98, "Variación Stock": -2, "Costo Ajuste": -150000, "Cobro": 150000, "Estado": "Faltante",
         "Serie": "A", "Número": "101", "Centro de Costos": "Bar", "Subfamilia": "Licores", "Coste Línea": 75000
       },
       {
-        "Fecha Doc": "2024-03-01", "Almacén": "Sede Sur", "Artículo": "Solomito Res", "Subartículo": "Kilo",
+        "Fecha Doc": "2024-03-01", "Almacén": "Sede Sur", "Artículo": "Solomito Res", "Subartículo": "Kilo", "Unidad": "KG",
         "Stock a Fecha": 50, "Stock Inventario": 51, "Variación Stock": 1, "Costo Ajuste": 45000, "Cobro": 0, "Estado": "Sobrante",
         "Serie": "A", "Número": "102", "Centro de Costos": "Cocina", "Subfamilia": "Carnes", "Coste Línea": 45000
       },
       {
-        "Fecha Doc": "2024-03-02", "Almacén": "Sede Norte", "Artículo": "Salmon", "Subartículo": "Porción",
+        "Fecha Doc": "2024-03-02", "Almacén": "Sede Norte", "Artículo": "Salmon", "Subartículo": "Porción", "Unidad": "UND",
         "Stock a Fecha": 20, "Stock Inventario": 15, "Variación Stock": -5, "Costo Ajuste": -250000, "Cobro": 250000, "Estado": "Faltante",
         "Serie": "A", "Número": "103", "Centro de Costos": "Cocina", "Subfamilia": "Pescados", "Coste Línea": 50000
       },
       {
-        "Fecha Doc": "2024-03-02", "Almacén": "Sede Central", "Artículo": "Cerveza Corona", "Subartículo": "Botella",
+        "Fecha Doc": "2024-03-02", "Almacén": "Sede Central", "Artículo": "Cerveza Corona", "Subartículo": "Botella", "Unidad": "UND",
         "Stock a Fecha": 200, "Stock Inventario": 200, "Variación Stock": 0, "Costo Ajuste": 0, "Cobro": 0, "Estado": "Sin novedad",
         "Serie": "A", "Número": "104", "Centro de Costos": "Bar", "Subfamilia": "Cervezas", "Coste Línea": 4500
       }
