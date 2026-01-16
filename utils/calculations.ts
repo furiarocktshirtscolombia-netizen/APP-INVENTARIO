@@ -75,10 +75,7 @@ export const processInventoryData = (data: any[]): ProcessedItem[] => {
     const rawCobro = parseCurrency(row["Cobro"]);
     const costoAjuste = parseCurrency(row["Costo Ajuste"]);
     
-    // MEJORA: Si el cobro es 0 pero hay costo de ajuste (impacto económico), 
-    // asumimos que el valor de cobro es el valor absoluto del ajuste.
     const cobro = (rawCobro === 0 && costoAjuste !== 0) ? Math.abs(costoAjuste) : rawCobro;
-    
     const reliability = variacion === 0 ? 1 : 0;
     
     let unidad = String(
@@ -148,7 +145,6 @@ export const aggregateSedeMetrics = (processedData: ProcessedItem[]): SedeMetric
         ccDataMap[cc].perfect++;
       }
       
-      // Para métricas generales, sumamos el cobro real (positivo o negativo según estado)
       const cobroEfectivo = item.Estado_Normalizado === 'Faltantes' ? -item.Cobro : item.Cobro;
       totalCobro += cobroEfectivo;
       
@@ -178,8 +174,20 @@ export const aggregateSedeMetrics = (processedData: ProcessedItem[]): SedeMetric
   });
 };
 
+/**
+ * REGLA VISUAL ACTUALIZADA:
+ * 🟢 ≥ 85% → Confiable
+ * 🟡 60% – 84% → Atención
+ * 🔴 < 60% → Crítico
+ */
 export const getTrafficLightColor = (percentage: number): string => {
-  if (percentage >= 95) return 'emerald';
-  if (percentage >= 85) return 'amber';
+  if (percentage >= 85) return 'emerald';
+  if (percentage >= 60) return 'amber';
   return 'rose';
+};
+
+export const getRiskLevelText = (percentage: number): string => {
+  if (percentage >= 85) return 'Riesgo Bajo (Confiable)';
+  if (percentage >= 60) return 'Riesgo Medio (Atención)';
+  return 'Riesgo Alto (Crítico)';
 };

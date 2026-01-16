@@ -137,7 +137,7 @@ const App: React.FC = () => {
   const renderPrintView = () => (
     <div 
       id="PDF_PRINT_ROOT" 
-      className="bg-white p-10"
+      className="bg-white p-12"
       style={{ 
         width: '1240px', 
         minHeight: '900px', 
@@ -149,65 +149,89 @@ const App: React.FC = () => {
         overflow: 'visible'
       }}
     >
-      <div className="flex justify-between items-center mb-12 border-b-8 border-slate-900 pb-8">
-        <div className="flex items-center gap-6">
-          <div className="bg-emerald-600 p-5 rounded-2xl text-white">
-            <i className="fa-solid fa-file-invoice-dollar text-5xl"></i>
+      {/* CABECERA PDF */}
+      <div className="flex justify-between items-center mb-12 border-b-8 border-slate-900 pb-10">
+        <div className="flex items-center gap-8">
+          <div className="bg-emerald-600 p-6 rounded-[30px] text-white shadow-xl">
+            <i className="fa-solid fa-brain text-6xl"></i>
           </div>
           <div>
-            <h1 className="text-4xl font-black text-slate-900 uppercase tracking-tighter leading-none">
-              REPORTE: {activeView === 'dashboard' ? 'RESUMEN EJECUTIVO' : activeView === 'cobros' ? 'LIQUIDACIÓN COBROS' : 'ÍTEMS CRÍTICOS'}
+            <h1 className="text-5xl font-black text-slate-900 uppercase tracking-tighter leading-none mb-2">
+              RELIABILITY PRO: {activeView === 'dashboard' ? 'RESUMEN EJECUTIVO' : activeView === 'cobros' ? 'LIQUIDACIÓN COBROS' : 'ÍTEMS CRÍTICOS'}
             </h1>
-            <p className="text-emerald-600 font-black uppercase tracking-widest mt-3 text-sm">RELIABILITY PRO - GESTIÓN INVENTARIOS</p>
+            <p className="text-emerald-600 font-black uppercase tracking-[0.3em] text-lg">Informe de Auditoría de Inventarios</p>
           </div>
         </div>
-        <div className="text-right">
-           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Emisión:</p>
-           <p className="font-black text-slate-800 text-xl">{new Date().toLocaleString('es-CO')}</p>
+        <div className="text-right border-l-4 border-slate-100 pl-8">
+           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Emisión Documento:</p>
+           <p className="font-black text-slate-800 text-2xl">{new Date().toLocaleString('es-CO')}</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-4 gap-6 p-6 bg-slate-50 border-2 border-slate-200 rounded-3xl mb-12">
-        <div><p className="text-[9px] font-black text-slate-400 uppercase">Sede:</p><p className="font-black text-sm uppercase">{selectedSede}</p></div>
-        <div><p className="text-[9px] font-black text-slate-400 uppercase">C. Costo:</p><p className="font-black text-sm uppercase">{selectedCentroCosto}</p></div>
-        <div><p className="text-[9px] font-black text-slate-400 uppercase">Estado:</p><p className="font-black text-sm uppercase">{selectedEstado}</p></div>
-        <div><p className="text-[9px] font-black text-slate-400 uppercase">Ítems:</p><p className="font-black text-sm uppercase">{filteredData.length}</p></div>
+      {/* METADATOS DEL REPORTE */}
+      <div className="grid grid-cols-4 gap-8 p-10 bg-slate-50 border-2 border-slate-100 rounded-[40px] mb-12">
+        <div><p className="text-xs font-black text-slate-400 uppercase mb-2">Sede auditada:</p><p className="font-black text-xl uppercase text-slate-900">{selectedSede}</p></div>
+        <div><p className="text-xs font-black text-slate-400 uppercase mb-2">Centro costo:</p><p className="font-black text-xl uppercase text-slate-900">{selectedCentroCosto}</p></div>
+        <div><p className="text-xs font-black text-slate-400 uppercase mb-2">Rango Temporal:</p><p className="font-black text-xl uppercase text-slate-900">{startDate || 'Completo'}</p></div>
+        <div><p className="text-xs font-black text-slate-400 uppercase mb-2">Estado Filtro:</p><p className="font-black text-xl uppercase text-slate-900">{selectedEstado}</p></div>
       </div>
 
       <div className="pdf-body">
         {activeView === 'dashboard' && (
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="bg-slate-900 text-white uppercase text-[11px]">
-                <th className="p-4 text-left">Sede / Centro Costo</th>
-                <th className="p-4 text-right">Confiabilidad (%)</th>
-                <th className="p-4 text-right">Balance Neto</th>
-                <th className="p-4 text-right">Ajuste Costo</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sedeMetrics.map(m => (
-                <React.Fragment key={m.almacen}>
-                  <tr className="border-b border-slate-200">
-                    <td className="p-4 font-black uppercase text-slate-900">{m.almacen}</td>
-                    <td className="p-4 text-right font-black text-emerald-600 text-lg">{m.globalReliability.toFixed(2)}%</td>
-                    <td className={`p-4 text-right font-black ${m.totalCobro < 0 ? 'text-rose-600' : 'text-emerald-600'}`}>{formatCurrency(m.totalCobro)}</td>
-                    <td className="p-4 text-right font-bold text-slate-700">{formatCurrency(m.totalCostoAjuste)}</td>
-                  </tr>
-                </React.Fragment>
-              ))}
-            </tbody>
-          </table>
+          <div className="space-y-12">
+            {/* PORTADA DASHBOARD PDF: FOCO DE ATENCION */}
+            <div className="bg-rose-50 border-2 border-rose-200 p-8 rounded-[30px] flex justify-between items-center">
+               <div>
+                  <h3 className="text-rose-600 font-black uppercase tracking-widest text-sm mb-2">Hallazgo Crítico</h3>
+                  <p className="text-2xl font-black text-slate-900 uppercase">La sede {sedeMetrics.sort((a,b) => a.globalReliability - b.globalReliability)[0]?.almacen} requiere intervención urgente.</p>
+               </div>
+               <div className="text-right">
+                  <p className="text-xs font-black text-rose-400 uppercase">Impacto Balance:</p>
+                  <p className="text-4xl font-black text-rose-600 tracking-tighter">{formatCurrency(sedeMetrics.reduce((a,b)=>a+b.totalCobro, 0))}</p>
+               </div>
+            </div>
+
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="bg-slate-900 text-white uppercase text-[12px] font-black tracking-widest">
+                  <th className="p-6 text-left">Almacén / Sede</th>
+                  <th className="p-6 text-center">Salud Operativa</th>
+                  <th className="p-6 text-right">Balance de Cobro</th>
+                  <th className="p-6 text-right">Ajuste Costo</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sedeMetrics.map(m => {
+                  const rel = m.globalReliability.toFixed(1);
+                  return (
+                    <tr key={m.almacen} className="border-b-2 border-slate-50">
+                      <td className="p-6 font-black uppercase text-slate-900 text-lg">{m.almacen}</td>
+                      <td className="p-6 text-center">
+                        <div className="inline-block px-4 py-2 bg-slate-100 rounded-xl">
+                          <span className="font-black text-slate-900">{rel}%</span>
+                          <span className={`ml-2 text-xs uppercase font-black ${m.globalReliability >= 85 ? 'text-emerald-600' : m.globalReliability >= 60 ? 'text-amber-500' : 'text-rose-600'}`}>
+                            {m.globalReliability >= 85 ? 'CONFIABLE' : m.globalReliability >= 60 ? 'ATENCIÓN' : 'CRÍTICO'}
+                          </span>
+                        </div>
+                      </td>
+                      <td className={`p-6 text-right font-black text-xl ${m.totalCobro < 0 ? 'text-rose-600' : 'text-emerald-600'}`}>{formatCurrency(m.totalCobro)}</td>
+                      <td className="p-6 text-right font-bold text-slate-500 text-lg">{formatCurrency(m.totalCostoAjuste)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
 
         {activeView === 'cobros' && (
           <table className="w-full border-collapse">
             <thead>
-              <tr className="bg-slate-900 text-white uppercase text-[11px]">
-                <th className="p-4 text-left">Descripción / Centro Costo</th>
-                <th className="p-4 text-center">Unidad</th>
-                <th className="p-4 text-center">Variación</th>
-                <th className="p-4 text-right">Valor Cobro</th>
+              <tr className="bg-slate-900 text-white uppercase text-[11px] font-black tracking-widest">
+                <th className="p-5 text-left">Artículo / Centro Costo</th>
+                <th className="p-5 text-center">Unidad</th>
+                <th className="p-5 text-center">Variación</th>
+                <th className="p-5 text-right bg-slate-800">Valor Liquidación</th>
               </tr>
             </thead>
             <tbody>
@@ -216,47 +240,54 @@ const App: React.FC = () => {
                 const displayVal = isFaltante ? -item.Cobro : item.Cobro;
                 return (
                   <tr key={item.id} className="border-b border-slate-100">
-                    <td className="p-4">
-                      <p className="font-black uppercase text-xs">{item.Artículo}</p>
-                      <p className="text-[9px] text-slate-400 uppercase">{item["Centro de Costos"]} - {item.Estado_Normalizado}</p>
+                    <td className="p-5">
+                      <p className="font-black uppercase text-sm text-slate-800">{item.Artículo}</p>
+                      <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">{item["Centro de Costos"]} — {item.Estado_Normalizado}</p>
                     </td>
-                    <td className="p-4 text-center font-bold text-slate-500">{item.Unidad}</td>
-                    <td className={`p-4 text-center font-black ${isFaltante ? 'text-rose-600' : 'text-emerald-600'}`}>{item["Variación Stock"]}</td>
-                    <td className={`p-4 text-right font-black ${isFaltante ? 'text-rose-600' : 'text-emerald-600'}`}>
-                      {item.Estado_Normalizado !== 'Sin Novedad' ? formatCurrency(displayVal) : '-'}
+                    <td className="p-5 text-center font-bold text-slate-400">{item.Unidad}</td>
+                    <td className={`p-5 text-center font-black text-lg ${isFaltante ? 'text-rose-600' : 'text-emerald-600'}`}>{item["Variación Stock"]}</td>
+                    <td className={`p-5 text-right font-black text-xl ${isFaltante ? 'text-rose-600' : 'text-emerald-600'}`}>
+                      {item.Estado_Normalizado !== 'Sin Novedad' ? formatCurrency(displayVal) : '0'}
                     </td>
                   </tr>
                 );
               })}
             </tbody>
+            <tfoot>
+              <tr className="bg-slate-50">
+                <td colSpan={3} className="p-10 text-right font-black uppercase text-sm tracking-[0.2em] text-slate-400">Total Liquidación de este Periodo:</td>
+                <td className={`p-10 text-right font-black text-5xl border-t-8 ${filteredData.reduce((a,b)=>a+(b.Estado_Normalizado==='Faltantes'?-b.Cobro:b.Cobro),0) < 0 ? 'text-rose-600 border-rose-600' : 'text-emerald-600 border-emerald-600'}`}>
+                  {formatCurrency(filteredData.reduce((a,b)=>a+(b.Estado_Normalizado==='Faltantes'?-b.Cobro:b.Cobro),0))}
+                </td>
+              </tr>
+            </tfoot>
           </table>
         )}
 
         {activeView === 'critical' && (
           <table className="w-full border-collapse">
             <thead>
-              <tr className="bg-slate-900 text-white uppercase text-[11px]">
-                <th className="p-4 text-left">Artículo / Sede</th>
-                <th className="p-4 text-center">Unidad</th>
-                <th className="p-4 text-center">Desviación</th>
-                <th className="p-4 text-right bg-rose-700">Valor Cobro</th>
+              <tr className="bg-slate-900 text-white uppercase text-[12px] font-black">
+                <th className="p-6 text-left">Ranking Crítico (Top Impacto)</th>
+                <th className="p-6 text-center">Desviación</th>
+                <th className="p-6 text-right bg-rose-700">Valor Cobro</th>
               </tr>
             </thead>
             <tbody>
               {[...filteredData]
+                .filter(i => i.Estado_Normalizado !== 'Sin Novedad')
                 .sort((a,b) => b.Cobro - a.Cobro)
-                .map(item => {
+                .map((item, idx) => {
                   const isFaltante = item.Estado_Normalizado === 'Faltantes';
                   const displayVal = isFaltante ? -item.Cobro : item.Cobro;
                   return (
                     <tr key={item.id} className="border-b border-slate-100">
-                      <td className="p-4">
-                        <p className="font-black uppercase text-xs">{item.Artículo}</p>
-                        <p className="text-[9px] text-slate-400 uppercase">{item.Almacén} - {item.Estado_Normalizado}</p>
+                      <td className="p-6">
+                        <p className="font-black uppercase text-slate-800">{idx+1}. {item.Artículo}</p>
+                        <p className="text-[10px] text-slate-400 font-black uppercase">{item.Almacén} — {item["Centro de Costos"]} — {item.Estado_Normalizado}</p>
                       </td>
-                      <td className="p-4 text-center font-bold">{item.Unidad}</td>
-                      <td className={`p-4 text-center font-black ${isFaltante ? 'text-rose-600' : 'text-emerald-600'}`}>{item["Variación Stock"]}</td>
-                      <td className={`p-4 text-right font-black ${isFaltante ? 'text-rose-600' : 'text-emerald-600'}`}>{formatCurrency(displayVal)}</td>
+                      <td className={`p-6 text-center font-black text-lg ${isFaltante ? 'text-rose-600' : 'text-amber-500'}`}>{item["Variación Stock"]}</td>
+                      <td className={`p-6 text-right font-black text-xl ${isFaltante ? 'text-rose-600' : 'text-emerald-600'}`}>{formatCurrency(displayVal)}</td>
                     </tr>
                   );
                 })}
@@ -265,8 +296,21 @@ const App: React.FC = () => {
         )}
       </div>
 
-      <div className="mt-20 pt-10 border-t-4 border-slate-900 text-center">
-         <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.6em]">REPORTE GENERADO MEDIANTE PROMPT MAESTRO - RELIABILITY PRO SYSTEM</p>
+      {/* FIRMAS Y PIE DE PÁGINA REFORZADO */}
+      <div className="mt-24 pt-20 border-t-8 border-slate-900">
+         <div className="flex justify-between gap-32 mb-20">
+            <div className="flex-1 border-t border-slate-200 pt-4">
+               <p className="text-xs font-black uppercase text-slate-400 mb-12">Firma Auditoría de Inventarios</p>
+               <div className="h-0.5 bg-slate-100 w-full mb-2"></div>
+               <p className="text-[10px] font-bold text-slate-300 uppercase">Aprobación Técnica</p>
+            </div>
+            <div className="flex-1 border-t border-slate-200 pt-4">
+               <p className="text-xs font-black uppercase text-slate-400 mb-12">Firma Gerencia Operativa</p>
+               <div className="h-0.5 bg-slate-100 w-full mb-2"></div>
+               <p className="text-[10px] font-bold text-slate-300 uppercase">Validación Administrativa</p>
+            </div>
+         </div>
+         <p className="text-[12px] font-black text-slate-300 uppercase tracking-[0.8em] text-center">RELIABILITY PRO SYSTEM — AUDITORÍA CERTIFICADA</p>
       </div>
     </div>
   );
