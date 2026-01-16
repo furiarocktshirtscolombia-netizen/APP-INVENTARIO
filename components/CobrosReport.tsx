@@ -19,22 +19,26 @@ const CobrosReport: React.FC<CobrosReportProps> = ({
   startDate,
   endDate
 }) => {
-  /**
-   * CORRECCIÓN: El Informe de Cobros debe usar exactamente los datos que le llegan (data), 
-   * los cuales ya vienen filtrados globalmente en App.tsx por Estado_Normalizado.
-   * Eliminamos el filtro restrictivo Cobro > 0 para que si el usuario selecciona 'Sin Novedad',
-   * el informe muestre los ítems correspondientes y no quede en blanco.
-   */
   const itemsToCharge = data;
-  const totalCobro = itemsToCharge.reduce((acc, item) => acc + (item.Cobro || 0), 0);
+  
+  // Cálculo de total respetando signos
+  const totalCobro = itemsToCharge.reduce((acc, item) => {
+    const val = item.Estado_Normalizado === 'Faltantes' ? -item.Cobro : item.Cobro;
+    return acc + val;
+  }, 0);
 
-  const formatCurrency = (val: number) => 
-    new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(val);
+  const formatCurrency = (val: number) => {
+    const formatted = new Intl.NumberFormat('es-CO', { 
+      style: 'currency', 
+      currency: 'COP', 
+      maximumFractionDigits: 0 
+    }).format(Math.abs(val));
+    return val < 0 ? `-${formatted}` : formatted;
+  };
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 print:m-0 print:p-0">
       <div className="bg-white border border-slate-200 shadow-xl rounded-2xl overflow-hidden print:border-none print:shadow-none">
-        {/* Cabecera del Reporte */}
         <div className="p-10 border-b border-slate-100 bg-slate-50/30">
           <div className="flex justify-between items-start mb-8">
             <div className="flex items-center gap-4">
@@ -52,7 +56,6 @@ const CobrosReport: React.FC<CobrosReportProps> = ({
             </div>
           </div>
 
-          {/* Filtros Aplicados */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-5 bg-white border border-slate-200 rounded-2xl shadow-sm">
             <div>
               <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Punto de Venta:</p>
@@ -75,19 +78,21 @@ const CobrosReport: React.FC<CobrosReportProps> = ({
           </div>
         </div>
 
-        {/* Cuerpo de la Tabla */}
         <div className="p-10">
           <table className="w-full text-left mb-10 border-separate border-spacing-0">
             <thead>
               <tr className="bg-slate-900 text-white text-[9px] font-black uppercase tracking-widest">
                 <th className="px-6 py-4 rounded-tl-xl">Descripción del Artículo / Subartículo</th>
-                <th className="px-6 py-4 text-center">Unidad (Inventario)</th>
+                <th className="px-6 py-4 text-center">Unidad</th>
                 <th className="px-6 py-4 text-center">Variación</th>
-                <th className="px-6 py-4 text-right rounded-tr-xl bg-emerald-600">Valor Cobro</th>
+                <th className="px-6 py-4 text-right rounded-tr-xl bg-slate-800">Valor Cobro</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {itemsToCharge.map((item) => {
+                const isFaltante = item.Estado_Normalizado === 'Faltantes';
+                const displayVal = isFaltante ? -item.Cobro : item.Cobro;
+                
                 return (
                   <tr key={item.id} className="text-sm group hover:bg-slate-50 transition-colors">
                     <td className="px-6 py-5">
@@ -96,24 +101,28 @@ const CobrosReport: React.FC<CobrosReportProps> = ({
                         <p className="text-[10px] text-slate-500 font-bold uppercase">{item["Centro de Costos"]}</p>
                         <span className="text-slate-300 text-[10px]">•</span>
                         <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase ${
-                          item.Estado_Normalizado === 'Faltantes' ? 'bg-rose-50 text-rose-600' : 
-                          item.Estado_Normalizado === 'Sobrantes' ? 'bg-amber-50 text-amber-600' : 
-                          'bg-emerald-50 text-emerald-600'
+                          isFaltante ? 'bg-rose-50 text-rose-600' : 
+                          item.Estado_Normalizado === 'Sobrantes' ? 'bg-emerald-50 text-emerald-600' : 
+                          'bg-slate-50 text-slate-400'
                         }`}>
                           {item.Estado_Normalizado}
                         </span>
                       </div>
                     </td>
                     <td className="px-6 py-5 text-center">
-                      <span className="inline-block px-4 py-1.5 bg-slate-800 rounded-lg text-xs font-black text-white uppercase tracking-widest shadow-sm">
+                      <span className="inline-block px-4 py-1.5 bg-slate-100 rounded-lg text-[10px] font-black text-slate-600 uppercase tracking-widest">
                         {item.Unidad || '-'}
                       </span>
                     </td>
-                    <td className={`px-6 py-5 text-center font-black text-lg ${item.Estado_Normalizado === 'Sin Novedad' ? 'text-slate-300' : 'text-rose-600'}`}>
-                      {Math.abs(item["Variación Stock"])}
+                    <td className={`px-6 py-5 text-center font-black text-lg ${isFaltante ? 'text-rose-600' : item.Estado_Normalizado === 'Sobrantes' ? 'text-emerald-600' : 'text-slate-300'}`}>
+                      {item["Variación Stock"]}
                     </td>
-                    <td className="px-6 py-5 text-right font-black text-slate-800 text-lg bg-emerald-50/30 group-hover:bg-emerald-50 transition-colors">
-                      {item.Cobro > 0 ? formatCurrency(item.Cobro) : '-'}
+                    <td className={`px-6 py-5 text-right font-black text-lg border-r-4 ${
+                      isFaltante ? 'text-rose-600 border-rose-600 bg-rose-50/20' : 
+                      item.Estado_Normalizado === 'Sobrantes' ? 'text-emerald-600 border-emerald-600 bg-emerald-50/20' : 
+                      'text-slate-300 border-slate-100'
+                    }`}>
+                      {item.Estado_Normalizado !== 'Sin Novedad' ? formatCurrency(displayVal) : '-'}
                     </td>
                   </tr>
                 );
@@ -128,15 +137,14 @@ const CobrosReport: React.FC<CobrosReportProps> = ({
             </tbody>
             <tfoot>
               <tr>
-                <td colSpan={3} className="px-6 py-10 text-right font-black text-slate-400 uppercase text-xs tracking-widest pr-10">Total Reportado:</td>
-                <td className="px-6 py-10 text-right font-black text-4xl text-slate-900 tracking-tighter border-t-4 border-emerald-600">
+                <td colSpan={3} className="px-6 py-10 text-right font-black text-slate-400 uppercase text-xs tracking-widest pr-10">Balance Total Reportado:</td>
+                <td className={`px-6 py-10 text-right font-black text-4xl tracking-tighter border-t-4 ${totalCobro < 0 ? 'text-rose-600 border-rose-600' : 'text-emerald-600 border-emerald-600'}`}>
                   {formatCurrency(totalCobro)}
                 </td>
               </tr>
             </tfoot>
           </table>
 
-          {/* Área de Firmas */}
           <div className="mt-24 flex flex-wrap gap-20 print:gap-10">
             <div className="flex-1 min-w-[200px] border-t-2 border-slate-200 pt-5">
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-10">Firma Administrador Sede</p>

@@ -71,11 +71,16 @@ export const processInventoryData = (data: any[]): ProcessedItem[] => {
     const variacion = Number(row["Variación Stock"]) ?? (stockFisico - stockSistema);
     const rawDate = row["Fecha Doc"] || row["Fecha"] || "";
     const fechaOperativa = normalizeDate(rawDate);
-    const cobro = parseCurrency(row["Cobro"]);
+    
+    const rawCobro = parseCurrency(row["Cobro"]);
     const costoAjuste = parseCurrency(row["Costo Ajuste"]);
+    
+    // MEJORA: Si el cobro es 0 pero hay costo de ajuste (impacto económico), 
+    // asumimos que el valor de cobro es el valor absoluto del ajuste.
+    const cobro = (rawCobro === 0 && costoAjuste !== 0) ? Math.abs(costoAjuste) : rawCobro;
+    
     const reliability = variacion === 0 ? 1 : 0;
     
-    // Captura robusta de la Unidad
     let unidad = String(
       row["Unidad"] || 
       row["Unid."] || 
@@ -85,8 +90,6 @@ export const processInventoryData = (data: any[]): ProcessedItem[] => {
       ""
     ).trim().toUpperCase();
 
-    // Lógica de Identificación: Si la unidad está vacía o es genérica, 
-    // pero el subartículo contiene una unidad válida (ej. ONZA), la extraemos.
     const commonUnits = ["ONZA", "UNIDADES", "GRAMOS", "KG", "GRAMO", "ONZAS", "UND", "UNIDAD", "LT", "LITRO", "BOTELLA"];
     if ((!unidad || unidad === "-" || unidad === "UND") && subarticulo) {
       if (commonUnits.includes(subarticulo.toUpperCase())) {
@@ -109,8 +112,8 @@ export const processInventoryData = (data: any[]): ProcessedItem[] => {
       "Cobro": cobro,
       "Costo Ajuste": costoAjuste,
       "Unidad": unidad || "UND",
-      "Estado": estadoNormalizado, // Mantenemos compatibilidad
-      "Estado_Normalizado": estadoNormalizado, // Nuevo campo solicitado
+      "Estado": estadoNormalizado,
+      "Estado_Normalizado": estadoNormalizado,
       "Fecha_Operativa": fechaOperativa,
       "Fecha Doc": fechaOperativa,
       reliability
@@ -144,7 +147,11 @@ export const aggregateSedeMetrics = (processedData: ProcessedItem[]): SedeMetric
         perfectItems++;
         ccDataMap[cc].perfect++;
       }
-      totalCobro += item.Cobro;
+      
+      // Para métricas generales, sumamos el cobro real (positivo o negativo según estado)
+      const cobroEfectivo = item.Estado_Normalizado === 'Faltantes' ? -item.Cobro : item.Cobro;
+      totalCobro += cobroEfectivo;
+      
       totalCostoAjuste += item["Costo Ajuste"];
       if (item.Estado_Normalizado === 'Faltantes') totalFaltantes++;
       else if (item.Estado_Normalizado === 'Sobrantes') totalSobrantes++;

@@ -69,31 +69,19 @@ const App: React.FC = () => {
     setActiveView('dashboard');
   };
 
-  /**
-   * SECUENCIA MAESTRA DE EXPORTACIÓN (html2canvas + jsPDF)
-   * 1. Activar modo exportación (desmonta charts)
-   * 2. Esperar renderizado limpio
-   * 3. Capturar canvas y generar PDF
-   */
   const handleDownloadReport = async (e: React.MouseEvent) => {
     e.preventDefault();
     if (data.length === 0) return;
 
     try {
-      console.log("EXPORT MODE ON");
       setIsDownloading(true);
-      
-      // Espera para asegurar unmount de charts y render de PDF_PRINT_ROOT
       await new Promise((r) => setTimeout(r, 800));
 
       const el = document.getElementById("PDF_PRINT_ROOT");
       if (!el) {
-        console.error("PDF_PRINT_ROOT no encontrado");
         setIsDownloading(false);
         return;
       }
-
-      console.log("PRINT ROOT READY - CAPTURING CANVAS");
       
       const canvas = await html2canvas(el, {
         scale: 2,
@@ -117,11 +105,9 @@ const App: React.FC = () => {
       let heightLeft = imgHeight;
       let position = 0;
 
-      // Agregar primera página
       pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
       heightLeft -= pageHeight;
 
-      // Agregar páginas adicionales si es necesario
       while (heightLeft > 0) {
         position -= pageHeight;
         pdf.addPage();
@@ -132,8 +118,6 @@ const App: React.FC = () => {
       const dateStr = new Date().toISOString().slice(0, 10);
       const viewFriendly = activeView.toUpperCase();
       pdf.save(`Reporte_Inventario_${viewFriendly}_${selectedSede}_${dateStr}.pdf`);
-      
-      console.log("EXPORT DONE");
     } catch (err) {
       console.error("Error exportando PDF:", err);
     } finally {
@@ -141,10 +125,15 @@ const App: React.FC = () => {
     }
   };
 
-  const formatCurrency = (val: number) => 
-    new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(val);
+  const formatCurrency = (val: number) => {
+    const formatted = new Intl.NumberFormat('es-CO', { 
+      style: 'currency', 
+      currency: 'COP', 
+      maximumFractionDigits: 0 
+    }).format(Math.abs(val));
+    return val < 0 ? `-${formatted}` : formatted;
+  };
 
-  // VISTA DE EXPORTACIÓN EXCLUSIVA (SIN CHARTS)
   const renderPrintView = () => (
     <div 
       id="PDF_PRINT_ROOT" 
@@ -192,8 +181,8 @@ const App: React.FC = () => {
               <tr className="bg-slate-900 text-white uppercase text-[11px]">
                 <th className="p-4 text-left">Sede / Centro Costo</th>
                 <th className="p-4 text-right">Confiabilidad (%)</th>
-                <th className="p-4 text-right">Cobro</th>
-                <th className="p-4 text-right">Ajuste</th>
+                <th className="p-4 text-right">Balance Neto</th>
+                <th className="p-4 text-right">Ajuste Costo</th>
               </tr>
             </thead>
             <tbody>
@@ -202,17 +191,9 @@ const App: React.FC = () => {
                   <tr className="border-b border-slate-200">
                     <td className="p-4 font-black uppercase text-slate-900">{m.almacen}</td>
                     <td className="p-4 text-right font-black text-emerald-600 text-lg">{m.globalReliability.toFixed(2)}%</td>
-                    <td className="p-4 text-right font-black text-rose-600">{formatCurrency(m.totalCobro)}</td>
+                    <td className={`p-4 text-right font-black ${m.totalCobro < 0 ? 'text-rose-600' : 'text-emerald-600'}`}>{formatCurrency(m.totalCobro)}</td>
                     <td className="p-4 text-right font-bold text-slate-700">{formatCurrency(m.totalCostoAjuste)}</td>
                   </tr>
-                  {Object.entries(m.ccMetrics).map(([ccName, ccData]) => (
-                    <tr key={`${m.almacen}-${ccName}`} className="bg-slate-50/50">
-                      <td className="p-2 pl-12 text-[10px] font-black text-slate-400 uppercase">└ {ccName}</td>
-                      <td className="p-2 text-right text-[10px] font-black text-emerald-600/70">{ccData.reliability.toFixed(2)}%</td>
-                      <td></td>
-                      <td></td>
-                    </tr>
-                  ))}
                 </React.Fragment>
               ))}
             </tbody>
@@ -230,24 +211,24 @@ const App: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredData.map(item => (
-                <tr key={item.id} className="border-b border-slate-100">
-                  <td className="p-4">
-                    <p className="font-black uppercase text-xs">{item.Artículo}</p>
-                    <p className="text-[9px] text-slate-400 uppercase">{item["Centro de Costos"]}</p>
-                  </td>
-                  <td className="p-4 text-center font-bold text-slate-500">{item.Unidad}</td>
-                  <td className="p-4 text-center font-black text-rose-600">{item["Variación Stock"]}</td>
-                  <td className="p-4 text-right font-black text-slate-900">{formatCurrency(item.Cobro)}</td>
-                </tr>
-              ))}
+              {filteredData.map(item => {
+                const isFaltante = item.Estado_Normalizado === 'Faltantes';
+                const displayVal = isFaltante ? -item.Cobro : item.Cobro;
+                return (
+                  <tr key={item.id} className="border-b border-slate-100">
+                    <td className="p-4">
+                      <p className="font-black uppercase text-xs">{item.Artículo}</p>
+                      <p className="text-[9px] text-slate-400 uppercase">{item["Centro de Costos"]} - {item.Estado_Normalizado}</p>
+                    </td>
+                    <td className="p-4 text-center font-bold text-slate-500">{item.Unidad}</td>
+                    <td className={`p-4 text-center font-black ${isFaltante ? 'text-rose-600' : 'text-emerald-600'}`}>{item["Variación Stock"]}</td>
+                    <td className={`p-4 text-right font-black ${isFaltante ? 'text-rose-600' : 'text-emerald-600'}`}>
+                      {item.Estado_Normalizado !== 'Sin Novedad' ? formatCurrency(displayVal) : '-'}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
-            <tfoot>
-              <tr className="bg-slate-50">
-                <td colSpan={3} className="p-6 text-right font-black uppercase text-xs">Total Cobros Reportados:</td>
-                <td className="p-6 text-right font-black text-3xl border-t-4 border-emerald-600">{formatCurrency(filteredData.reduce((acc, i) => acc + i.Cobro, 0))}</td>
-              </tr>
-            </tfoot>
           </table>
         )}
 
@@ -264,17 +245,21 @@ const App: React.FC = () => {
             <tbody>
               {[...filteredData]
                 .sort((a,b) => b.Cobro - a.Cobro)
-                .map(item => (
-                <tr key={item.id} className="border-b border-slate-100">
-                  <td className="p-4">
-                    <p className="font-black uppercase text-xs">{item.Artículo}</p>
-                    <p className="text-[9px] text-slate-400 uppercase">{item.Almacén} - {item["Centro de Costos"]}</p>
-                  </td>
-                  <td className="p-4 text-center font-bold">{item.Unidad}</td>
-                  <td className="p-4 text-center font-black text-rose-600">{item["Variación Stock"]}</td>
-                  <td className="p-4 text-right font-black text-rose-700">{formatCurrency(item.Cobro)}</td>
-                </tr>
-              ))}
+                .map(item => {
+                  const isFaltante = item.Estado_Normalizado === 'Faltantes';
+                  const displayVal = isFaltante ? -item.Cobro : item.Cobro;
+                  return (
+                    <tr key={item.id} className="border-b border-slate-100">
+                      <td className="p-4">
+                        <p className="font-black uppercase text-xs">{item.Artículo}</p>
+                        <p className="text-[9px] text-slate-400 uppercase">{item.Almacén} - {item.Estado_Normalizado}</p>
+                      </td>
+                      <td className="p-4 text-center font-bold">{item.Unidad}</td>
+                      <td className={`p-4 text-center font-black ${isFaltante ? 'text-rose-600' : 'text-emerald-600'}`}>{item["Variación Stock"]}</td>
+                      <td className={`p-4 text-right font-black ${isFaltante ? 'text-rose-600' : 'text-emerald-600'}`}>{formatCurrency(displayVal)}</td>
+                    </tr>
+                  );
+                })}
             </tbody>
           </table>
         )}
@@ -289,10 +274,8 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50/50">
       {isDownloading ? (
-        // MODO EXPORTACIÓN: Solo se renderiza el contenedor limpio para html2canvas
         renderPrintView()
       ) : (
-        // UI OPERATIVA NORMAL
         <div className="flex flex-col min-h-screen">
           <header className="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm no-print">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
