@@ -50,7 +50,8 @@ const App: React.FC = () => {
     return ['Todos', ...uniqueCC];
   }, [data]);
 
-  const estadosList = ['Todos', 'Sin novedad', 'Faltante', 'Sobrante'];
+  // Estados según solicitud del usuario (Columna N del Excel)
+  const estadosList = ['Todos', 'Sin Novedad', 'Faltantes', 'Sobrantes'];
 
   const handleDataLoaded = (raw: InventoryRawRow[]) => {
     const processed = processInventoryData(raw);
@@ -170,7 +171,7 @@ const App: React.FC = () => {
                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2">Estado:</label>
                  <div className="relative group">
                    <select 
-                     className="bg-white border-2 border-slate-200 rounded-2xl px-5 py-3 text-sm font-black text-slate-700 outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-600 transition-all shadow-sm min-w-[180px] appearance-none"
+                     className="bg-white border-2 border-emerald-100 rounded-2xl px-5 py-3 text-sm font-black text-slate-700 outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-600 transition-all shadow-sm min-w-[180px] appearance-none"
                      value={selectedEstado}
                      onChange={(e) => setSelectedEstado(e.target.value)}
                    >

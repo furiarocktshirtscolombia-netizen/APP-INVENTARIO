@@ -7,9 +7,9 @@ interface CriticalItemsProps {
 }
 
 const CriticalItems: React.FC<CriticalItemsProps> = ({ data }) => {
-  const faltantes = data.filter(item => item.Estado === 'Faltante');
+  const faltantes = data.filter(item => item.Estado === 'Faltantes');
   
-  const topByValue = [...faltantes].sort((a, b) => Math.abs(a["Costo Ajuste"]) - Math.abs(b["Costo Ajuste"])); // Descending by abs cost adjustment
+  const topByValue = [...faltantes].sort((a, b) => Math.abs(a["Costo Ajuste"]) - Math.abs(b["Costo Ajuste"]));
   const topByQuantity = [...faltantes].sort((a, b) => Math.abs(a["Variación Stock"]) - Math.abs(b["Variación Stock"]));
 
   return (
@@ -49,6 +49,7 @@ const CriticalItems: React.FC<CriticalItemsProps> = ({ data }) => {
                 </div>
               </div>
             ))}
+            {topByValue.length === 0 && <p className="p-8 text-center text-slate-400 text-xs font-bold uppercase">Sin registros</p>}
           </div>
         </div>
 
@@ -76,6 +77,7 @@ const CriticalItems: React.FC<CriticalItemsProps> = ({ data }) => {
                 </div>
               </div>
             ))}
+            {topByQuantity.length === 0 && <p className="p-8 text-center text-slate-400 text-xs font-bold uppercase">Sin registros</p>}
           </div>
         </div>
       </div>

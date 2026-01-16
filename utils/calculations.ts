@@ -19,35 +19,41 @@ export const getTrafficLightColor = (percentage: number): string => {
   return 'rose';
 };
 
-/**
- * Procesa los datos del Excel aplicando un mapeo robusto para asegurar que 
- * campos como "Almacén" se capturen incluso si tienen nombres ligeramente distintos.
- */
 export const processInventoryData = (data: any[]): ProcessedItem[] => {
   return data.map((row, index) => {
-    // Mapeo robusto para "Almacén" (Sede)
-    const almacen = String(row["Almacén"] || row["Almacen"] || row["Sede"] || row["Punto de Venta"] || "Sede Sin Nombre").trim();
+    // Normalización de Almacén
+    const almacen = String(row["Almacén"] || row["Almacen"] || row["Sede"] || "Sede Sin Nombre").trim();
     const articulo = String(row["Artículo"] || row["Articulo"] || "Artículo Desconocido").trim();
     const subarticulo = String(row["Subartículo"] || row["Subarticulo"] || "N/A").trim();
+    const centroCosto = String(row["Centro de Costos"] || row["Centro de costo"] || row["CC"] || "General").trim();
     
     const stockSistema = Number(row["Stock a Fecha"]) || Number(row["Stock Sistema"]) || 0;
     const stockFisico = Number(row["Stock Inventario"]) || Number(row["Stock Físico"]) || 0;
     const variacion = Number(row["Variación Stock"]) ?? (stockFisico - stockSistema);
     
-    // El costo unitario se toma de "Coste Línea" o "Costo Unitario"
     const costeLinea = Number(row["Coste Línea"]) || Number(row["Costo Unitario"]) || 0;
-    
-    // El costo de ajuste se toma del Excel o se calcula si no existe
     const costoAjuste = Number(row["Costo Ajuste"]) ?? (variacion * costeLinea);
-    
     const cobro = Number(row["Cobro"]) || 0;
-    const estado = String(row["Estado"] || (variacion < 0 ? "Faltante" : variacion > 0 ? "Sobrante" : "Sin novedad"));
+
+    // Normalización de Estado basada estrictamente en los términos del usuario (Columna N)
+    // "Sin Novedad", "Faltantes", "Sobrantes"
+    let estadoOriginal = String(row["Estado"] || "").trim().toLowerCase();
+    let estado = "Sin Novedad";
+    
+    if (estadoOriginal.includes("faltante") || variacion < 0) {
+      estado = "Faltantes";
+    } else if (estadoOriginal.includes("sobrante") || variacion > 0) {
+      estado = "Sobrantes";
+    } else {
+      estado = "Sin Novedad";
+    }
 
     const sanitizedRow: InventoryRawRow = {
       ...row,
       "Almacén": almacen,
       "Artículo": articulo,
       "Subartículo": subarticulo,
+      "Centro de Costos": centroCosto,
       "Stock a Fecha": stockSistema,
       "Stock Inventario": stockFisico,
       "Variación Stock": variacion,
@@ -83,17 +89,13 @@ export const aggregateSedeMetrics = (processedData: ProcessedItem[]): SedeMetric
     let totalCostoAjuste = 0;
 
     items.forEach(item => {
-      // Peso_Economico = ABS(Costo Ajuste)
       const weight = Math.abs(Number(item["Costo Ajuste"]) || 0);
       const effectiveWeight = weight || 1; 
-      
       const itemRelPct = item.reliability * 100;
       weightedReliabilitySum += itemRelPct * effectiveWeight;
       totalWeight += effectiveWeight;
-      
       totalCobro += Number(item.Cobro) || 0;
       totalCostoAjuste += Number(item["Costo Ajuste"]) || 0;
-      
       const variacion = Number(item["Variación Stock"]) || 0;
       if (variacion < 0) totalFaltantes++;
       else if (variacion > 0) totalSobrantes++;
@@ -101,7 +103,6 @@ export const aggregateSedeMetrics = (processedData: ProcessedItem[]): SedeMetric
 
     return {
       almacen,
-      // Confiabilidad_Sede_Pct = SUM(Confiabilidad_Item_Pct * Peso_Economico) / SUM(Peso_Economico)
       globalReliability: totalWeight > 0 ? (weightedReliabilitySum / totalWeight) : 100,
       totalCobro,
       totalFaltantes,

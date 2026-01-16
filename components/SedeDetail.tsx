@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { ProcessedItem } from '../types';
 import { getTrafficLightColor } from '../utils/calculations';
 
@@ -9,18 +9,13 @@ interface SedeDetailProps {
 }
 
 const SedeDetail: React.FC<SedeDetailProps> = ({ data, selectedSede }) => {
-  const [stateFilter, setStateFilter] = useState('Todos');
+  // Mantenemos solo Subfamilia ya que no está en el encabezado global
   const [subfamilyFilter, setSubfamilyFilter] = useState('Todas');
-
-  const subfamilies = useMemo(() => ['Todas', ...Array.from(new Set(data.map(i => i.Subfamilia)))], [data]);
+  const subfamilies = useMemo(() => ['Todas', ...Array.from(new Set(data.map(i => i.Subfamilia))).filter(Boolean).sort()], [data]);
 
   const filtered = useMemo(() => {
-    return data.filter(item => {
-      const matchState = stateFilter === 'Todos' || item.Estado === stateFilter;
-      const matchSub = subfamilyFilter === 'Todas' || item.Subfamilia === subfamilyFilter;
-      return matchState && matchSub;
-    });
-  }, [data, stateFilter, subfamilyFilter]);
+    return data.filter(item => subfamilyFilter === 'Todas' || item.Subfamilia === subfamilyFilter);
+  }, [data, subfamilyFilter]);
 
   const formatCurrency = (val: number | undefined) => 
     val !== undefined ? new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(val) : 'N/A';
@@ -28,13 +23,26 @@ const SedeDetail: React.FC<SedeDetailProps> = ({ data, selectedSede }) => {
   return (
     <div className="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden">
       <div className="p-6 border-b border-slate-200 bg-slate-50/50 flex flex-wrap gap-4 items-center justify-between">
-        <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight">
-          Detalle por Ítem - <span className="text-emerald-600">Sede: {selectedSede}</span>
-        </h3>
+        <div>
+          <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight">
+            Detalle por Ítem
+          </h3>
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">
+            Sede Actual: <span className="text-emerald-600">{selectedSede}</span>
+          </p>
+        </div>
         
-        <div className="flex flex-wrap gap-4">
-          <FilterSelect label="Estado" value={stateFilter} onChange={setStateFilter} options={['Todos', 'Sin novedad', 'Faltante', 'Sobrante']} />
-          <FilterSelect label="Subfamilia" value={subfamilyFilter} onChange={setSubfamilyFilter} options={subfamilies} />
+        <div className="flex items-center gap-4">
+          <div className="flex flex-col gap-1">
+            <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter ml-1">Subfamilia (Filtro Interno)</span>
+            <select 
+              value={subfamilyFilter} 
+              onChange={(e) => setSubfamilyFilter(e.target.value)}
+              className="text-xs font-bold border-2 border-slate-200 rounded-lg px-3 py-1.5 bg-white outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 shadow-sm transition-all"
+            >
+              {subfamilies.map(o => <option key={o} value={o}>{o}</option>)}
+            </select>
+          </div>
         </div>
       </div>
 
@@ -59,21 +67,18 @@ const SedeDetail: React.FC<SedeDetailProps> = ({ data, selectedSede }) => {
             {filtered.map((item) => {
               const relPercent = item.reliability * 100;
               const color = getTrafficLightColor(relPercent);
-              
-              // Mapeo solicitado: Costo Unitario = Coste Línea
               const costoUnitario = Number(item["Coste Línea"]) || 0;
-              // Mapeo solicitado: Priorizar Costo Ajuste del Excel
               const costoAjuste = Number(item["Costo Ajuste"]);
 
               return (
                 <tr key={item.id} className="hover:bg-slate-50 transition-colors text-xs">
-                  <td className="px-4 py-4 font-bold text-slate-400 uppercase sticky left-0 bg-white/90 backdrop-blur-sm z-10 border-r border-slate-100">{item.Almacén || 'N/A'}</td>
-                  <td className="px-4 py-4 font-black text-slate-800 uppercase">{item.Artículo || 'N/A'}</td>
-                  <td className="px-4 py-4 text-slate-500 font-medium">{item.Subartículo || 'N/A'}</td>
-                  <td className="px-4 py-4 text-center font-bold text-slate-600 bg-slate-50/50">{item["Stock a Fecha"] ?? 'N/A'}</td>
-                  <td className="px-4 py-4 text-center font-bold text-slate-600">{item["Stock Inventario"] ?? 'N/A'}</td>
-                  <td className={`px-4 py-4 text-center font-black ${item["Variación Stock"] < 0 ? 'text-rose-600' : item["Variación Stock"] > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
-                    {item["Variación Stock"] ?? 'N/A'}
+                  <td className="px-4 py-4 font-bold text-slate-400 uppercase sticky left-0 bg-white/90 backdrop-blur-sm z-10 border-r border-slate-100">{item.Almacén}</td>
+                  <td className="px-4 py-4 font-black text-slate-800 uppercase">{item.Artículo}</td>
+                  <td className="px-4 py-4 text-slate-500 font-medium">{item.Subartículo}</td>
+                  <td className="px-4 py-4 text-center font-bold text-slate-600 bg-slate-50/50">{item["Stock a Fecha"]}</td>
+                  <td className="px-4 py-4 text-center font-bold text-slate-600">{item["Stock Inventario"]}</td>
+                  <td className={`px-4 py-4 text-center font-black ${item.Estado === 'Faltantes' ? 'text-rose-600' : item.Estado === 'Sobrantes' ? 'text-amber-600' : 'text-emerald-600'}`}>
+                    {item["Variación Stock"]}
                   </td>
                   <td className="px-4 py-4 text-right text-slate-500 font-bold">
                     {formatCurrency(costoUnitario)}
@@ -91,11 +96,11 @@ const SedeDetail: React.FC<SedeDetailProps> = ({ data, selectedSede }) => {
                   </td>
                   <td className="px-4 py-4 text-center">
                     <span className={`px-2 py-1 rounded-full text-[9px] font-black uppercase border ${
-                      item.Estado === 'Faltante' ? 'bg-rose-50 text-rose-600 border-rose-200' : 
-                      item.Estado === 'Sobrante' ? 'bg-amber-50 text-amber-600 border-amber-200' : 
+                      item.Estado === 'Faltantes' ? 'bg-rose-50 text-rose-600 border-rose-200' : 
+                      item.Estado === 'Sobrantes' ? 'bg-amber-50 text-amber-600 border-amber-200' : 
                       'bg-emerald-50 text-emerald-600 border-emerald-200'
                     }`}>
-                      {item.Estado || 'Sin novedad'}
+                      {item.Estado}
                     </span>
                   </td>
                 </tr>
@@ -103,22 +108,14 @@ const SedeDetail: React.FC<SedeDetailProps> = ({ data, selectedSede }) => {
             })}
           </tbody>
         </table>
+        {filtered.length === 0 && (
+          <div className="p-20 text-center">
+            <p className="text-slate-400 font-black uppercase tracking-widest text-sm">No se encontraron resultados con los filtros aplicados</p>
+          </div>
+        )}
       </div>
     </div>
   );
 };
-
-const FilterSelect = ({ label, value, onChange, options }: { label: string, value: string, onChange: (v: string) => void, options: string[] }) => (
-  <div className="flex flex-col gap-1">
-    <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter ml-1">{label}</span>
-    <select 
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className="text-xs font-bold border-2 border-slate-200 rounded-lg px-3 py-1.5 bg-white outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 shadow-sm transition-all"
-    >
-      {options.map(o => <option key={o} value={o}>{o}</option>)}
-    </select>
-  </div>
-);
 
 export default SedeDetail;
