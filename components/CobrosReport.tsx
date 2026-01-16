@@ -19,9 +19,17 @@ const CobrosReport: React.FC<CobrosReportProps> = ({
   startDate,
   endDate
 }) => {
-  // Solo ítems con cobro real (> 0) de la lista ya filtrada por el botón de Estado
-  const itemsToCharge = data.filter(item => item.Cobro > 0);
-  const totalCobro = itemsToCharge.reduce((acc, item) => acc + item.Cobro, 0);
+  /**
+   * LÓGICA DE VISUALIZACIÓN COHERENTE CON FILTROS:
+   * 1. Si el filtro es "Todos", mostramos solo lo que tiene cobro para mantener el reporte enfocado.
+   * 2. Si se selecciona un estado específico (ej. "Sin Novedad"), mostramos esos registros 
+   *    aunque el cobro sea $0, para validar que el filtro está funcionando.
+   */
+  const itemsToDisplay = selectedEstado === 'Todos' 
+    ? data.filter(item => item.Cobro > 0) 
+    : data;
+
+  const totalCobro = itemsToDisplay.reduce((acc, item) => acc + (Number(item.Cobro) || 0), 0);
 
   const formatCurrency = (val: number) => 
     new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(val);
@@ -30,9 +38,11 @@ const CobrosReport: React.FC<CobrosReportProps> = ({
     <div className="max-w-5xl mx-auto space-y-8 print:m-0 print:p-0 animate-in fade-in duration-500">
       <div className="flex justify-between items-end print:hidden">
         <div>
-          <h2 className="text-2xl font-black text-slate-800 uppercase tracking-tighter">Generación de Liquidación</h2>
+          <h2 className="text-2xl font-black text-slate-800 uppercase tracking-tighter">
+            {selectedEstado === 'Todos' ? 'Informe General de Cobros' : `Liquidación de ${selectedEstado}`}
+          </h2>
           <p className="text-sm font-bold text-slate-400 uppercase tracking-widest mt-1">
-            Organizado por Estado: <span className="text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-100">{selectedEstado}</span>
+            Filtro Activo: <span className="text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-100">{selectedEstado}</span>
           </p>
         </div>
         <button 
@@ -40,7 +50,7 @@ const CobrosReport: React.FC<CobrosReportProps> = ({
           className="bg-slate-900 text-white px-8 py-4 rounded-2xl text-sm font-black uppercase tracking-widest hover:bg-black transition-all shadow-2xl hover:shadow-emerald-200/20 active:scale-95 flex items-center gap-3 border-2 border-slate-800"
         >
           <i className="fa-solid fa-file-invoice-dollar text-xl"></i>
-          Imprimir Liquidación Oficial
+          Imprimir Reporte
         </button>
       </div>
 
@@ -54,7 +64,9 @@ const CobrosReport: React.FC<CobrosReportProps> = ({
                   <i className="fa-solid fa-brain text-4xl"></i>
                 </div>
                 <div>
-                  <h1 className="text-3xl font-black text-slate-900 uppercase tracking-tighter leading-none">Acta de Liquidación</h1>
+                  <h1 className="text-3xl font-black text-slate-900 uppercase tracking-tighter leading-none">
+                    Acta de Liquidación
+                  </h1>
                   <p className="text-xs font-black text-slate-400 uppercase tracking-[0.3em] mt-2 italic">Control Interno & Auditoría</p>
                 </div>
               </div>
@@ -69,7 +81,7 @@ const CobrosReport: React.FC<CobrosReportProps> = ({
                    <p className="text-xs font-black text-slate-800 uppercase">{selectedCentroCosto}</p>
                  </div>
                  <div className="bg-white px-4 py-2 rounded-xl border border-emerald-200 shadow-sm">
-                   <p className="text-[8px] font-black text-emerald-500 uppercase tracking-widest leading-tight">Estado Filtrado</p>
+                   <p className="text-[8px] font-black text-emerald-500 uppercase tracking-widest leading-tight">Estado Reportado</p>
                    <p className="text-xs font-black text-emerald-700 uppercase">{selectedEstado}</p>
                  </div>
               </div>
@@ -92,23 +104,32 @@ const CobrosReport: React.FC<CobrosReportProps> = ({
                   <th className="px-6 py-5">Descripción del Artículo / Subartículo</th>
                   <th className="px-6 py-5 text-center">Variación</th>
                   <th className="px-6 py-5 text-right">Costo Ajuste</th>
-                  <th className="px-6 py-5 text-right bg-emerald-600">Monto a Cobrar</th>
+                  <th className="px-6 py-5 text-right bg-emerald-600">Valor Cobro</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {itemsToCharge.map((item) => (
+                {itemsToDisplay.map((item) => (
                   <tr key={item.id} className="text-sm hover:bg-slate-50 transition-colors">
                     <td className="px-6 py-5">
                       <p className="font-black text-slate-900 uppercase leading-none mb-1">{item.Artículo}</p>
-                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">{item.Subartículo} • {item["Centro de Costos"]}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">{item.Subartículo} • {item["Centro de Costos"]}</p>
+                        <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded border ${
+                          item.Estado === 'Faltantes' ? 'bg-rose-50 border-rose-100 text-rose-500' :
+                          item.Estado === 'Sobrantes' ? 'bg-amber-50 border-amber-100 text-amber-500' :
+                          'bg-emerald-50 border-emerald-100 text-emerald-500'
+                        }`}>
+                          {item.Estado}
+                        </span>
+                      </div>
                     </td>
-                    <td className="px-6 py-5 text-center font-black text-rose-600 text-base">
+                    <td className={`px-6 py-5 text-center font-black text-base ${item["Variación Stock"] < 0 ? 'text-rose-600' : item["Variación Stock"] > 0 ? 'text-amber-600' : 'text-slate-400'}`}>
                       {item["Variación Stock"]}
                     </td>
-                    <td className="px-6 py-5 text-right font-bold text-slate-400 italic">
+                    <td className={`px-6 py-5 text-right font-bold italic ${item["Costo Ajuste"] < 0 ? 'text-rose-400' : 'text-slate-400'}`}>
                       {formatCurrency(Math.abs(item["Costo Ajuste"]))}
                     </td>
-                    <td className="px-6 py-5 text-right font-black text-slate-900 text-lg bg-emerald-50/30 border-l-2 border-emerald-100">
+                    <td className={`px-6 py-5 text-right font-black text-lg ${item.Cobro > 0 ? 'text-slate-900 bg-emerald-50/30' : 'text-slate-300'} border-l-2 border-emerald-100`}>
                       {formatCurrency(item.Cobro)}
                     </td>
                   </tr>
@@ -117,21 +138,23 @@ const CobrosReport: React.FC<CobrosReportProps> = ({
             </table>
           </div>
 
-          {itemsToCharge.length === 0 ? (
+          {itemsToDisplay.length === 0 ? (
             <div className="py-24 text-center border-2 border-dashed border-slate-100 rounded-3xl mt-6">
-              <i className="fa-solid fa-magnifying-glass-dollar text-6xl text-slate-200 mb-6 block"></i>
-              <p className="text-slate-400 font-black uppercase tracking-widest text-sm">No existen registros de cobro para el estado: <span className="text-emerald-500">{selectedEstado}</span></p>
+              <i className="fa-solid fa-filter text-6xl text-slate-200 mb-6 block"></i>
+              <p className="text-slate-400 font-black uppercase tracking-widest text-sm">
+                No hay registros para mostrar con el filtro: <span className="text-emerald-500">{selectedEstado}</span>
+              </p>
             </div>
           ) : (
             <div className="mt-12 flex justify-end">
               <div className="bg-slate-900 p-8 rounded-[32px] text-right shadow-2xl min-w-[400px]">
-                <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2">Total Neto Liquidación</p>
+                <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2">Total Liquidación Seleccionada</p>
                 <p className="text-5xl font-black text-white tracking-tighter">
                   {formatCurrency(totalCobro)}
                 </p>
                 <div className="mt-6 pt-6 border-t border-white/10 flex items-center justify-end gap-2 text-emerald-400">
                   <i className="fa-solid fa-check-circle"></i>
-                  <p className="text-[10px] font-black uppercase tracking-widest">Soporte Operativo Validado</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest">Cálculos Auditados - Prompt Maestro</p>
                 </div>
               </div>
             </div>
@@ -153,9 +176,9 @@ const CobrosReport: React.FC<CobrosReportProps> = ({
         </div>
 
         <div className="bg-slate-900 py-8 px-12 flex justify-between items-center text-white">
-          <p className="text-[9px] font-black uppercase tracking-[0.4em] opacity-50">Generado por Prompt Maestro - Reliability Pro</p>
+          <p className="text-[9px] font-black uppercase tracking-[0.4em] opacity-50">Generado por Reliability Pro - Sistema de Confiabilidad</p>
           <div className="flex gap-4">
-             <i className="fa-solid fa-qrcode text-3xl opacity-20"></i>
+             <i className="fa-solid fa-shield-halved text-2xl opacity-20"></i>
           </div>
         </div>
       </div>
