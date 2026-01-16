@@ -6,7 +6,7 @@ export const calculateItemReliability = (row: InventoryRawRow): number => {
   const stockFisico = Number(row["Stock Inventario"]) || 0;
   const variacion = Math.abs(Number(row["Variación Stock"]) || 0);
   
-  // Formula: (1 - (ABS(Variación Stock) / MAX(Stock a Fecha, Stock Inventario, 1))) * 100
+  // Formula obligatoria: (1 - (ABS(Variación Stock) / MAX(Stock a Fecha, Stock Inventario, 1))) * 100
   const maxStock = Math.max(stockSistema, stockFisico, 1);
   const reliability = 1 - (variacion / maxStock);
   
@@ -19,12 +19,50 @@ export const getTrafficLightColor = (percentage: number): string => {
   return 'rose';
 };
 
-export const processInventoryData = (data: InventoryRawRow[]): ProcessedItem[] => {
-  return data.map((row, index) => ({
-    ...row,
-    id: `${row.Almacén}-${row.Artículo}-${index}`,
-    reliability: calculateItemReliability(row)
-  }));
+/**
+ * Procesa los datos del Excel aplicando un mapeo robusto para asegurar que 
+ * campos como "Almacén" se capturen incluso si tienen nombres ligeramente distintos.
+ */
+export const processInventoryData = (data: any[]): ProcessedItem[] => {
+  return data.map((row, index) => {
+    // Mapeo robusto para "Almacén" (Sede)
+    const almacen = String(row["Almacén"] || row["Almacen"] || row["Sede"] || row["Punto de Venta"] || "Sede Sin Nombre").trim();
+    const articulo = String(row["Artículo"] || row["Articulo"] || "Artículo Desconocido").trim();
+    const subarticulo = String(row["Subartículo"] || row["Subarticulo"] || "N/A").trim();
+    
+    const stockSistema = Number(row["Stock a Fecha"]) || Number(row["Stock Sistema"]) || 0;
+    const stockFisico = Number(row["Stock Inventario"]) || Number(row["Stock Físico"]) || 0;
+    const variacion = Number(row["Variación Stock"]) ?? (stockFisico - stockSistema);
+    
+    // El costo unitario se toma de "Coste Línea" o "Costo Unitario"
+    const costeLinea = Number(row["Coste Línea"]) || Number(row["Costo Unitario"]) || 0;
+    
+    // El costo de ajuste se toma del Excel o se calcula si no existe
+    const costoAjuste = Number(row["Costo Ajuste"]) ?? (variacion * costeLinea);
+    
+    const cobro = Number(row["Cobro"]) || 0;
+    const estado = String(row["Estado"] || (variacion < 0 ? "Faltante" : variacion > 0 ? "Sobrante" : "Sin novedad"));
+
+    const sanitizedRow: InventoryRawRow = {
+      ...row,
+      "Almacén": almacen,
+      "Artículo": articulo,
+      "Subartículo": subarticulo,
+      "Stock a Fecha": stockSistema,
+      "Stock Inventario": stockFisico,
+      "Variación Stock": variacion,
+      "Coste Línea": costeLinea,
+      "Costo Ajuste": costoAjuste,
+      "Cobro": cobro,
+      "Estado": estado
+    };
+
+    return {
+      ...sanitizedRow,
+      id: `${almacen}-${articulo}-${index}`,
+      reliability: calculateItemReliability(sanitizedRow)
+    };
+  });
 };
 
 export const aggregateSedeMetrics = (processedData: ProcessedItem[]): SedeMetrics[] => {
@@ -47,7 +85,7 @@ export const aggregateSedeMetrics = (processedData: ProcessedItem[]): SedeMetric
     items.forEach(item => {
       // Peso_Economico = ABS(Costo Ajuste)
       const weight = Math.abs(Number(item["Costo Ajuste"]) || 0);
-      const effectiveWeight = weight || 1; // Fallback a 1 para no ignorar items de costo 0
+      const effectiveWeight = weight || 1; 
       
       const itemRelPct = item.reliability * 100;
       weightedReliabilitySum += itemRelPct * effectiveWeight;
