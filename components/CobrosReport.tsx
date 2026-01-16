@@ -27,7 +27,7 @@ const CobrosReport: React.FC<CobrosReportProps> = ({
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 print:m-0 print:p-0">
+    <div className="max-w-5xl mx-auto space-y-6 print:m-0 print:p-0">
       <div className="flex justify-between items-center print:hidden">
         <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight">Informe de Cobros Personalizado</h2>
         <button 
@@ -57,7 +57,6 @@ const CobrosReport: React.FC<CobrosReportProps> = ({
             </div>
           </div>
 
-          {/* RESUMEN DE FILTROS APLICADOS */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-5 bg-white border border-slate-200 rounded-2xl shadow-sm">
             <div>
               <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Punto de Venta:</p>
@@ -85,7 +84,8 @@ const CobrosReport: React.FC<CobrosReportProps> = ({
             <thead>
               <tr className="border-b-2 border-slate-800 text-[10px] font-black text-slate-400 uppercase tracking-widest">
                 <th className="py-4 border-b-2 border-slate-800">Descripción de Ítem</th>
-                <th className="py-4 text-center border-b-2 border-slate-800">Faltante</th>
+                <th className="py-4 border-b-2 border-slate-800 text-center">Unidad Inventario</th>
+                <th className="py-4 text-center border-b-2 border-slate-800">Variación</th>
                 <th className="py-4 text-right border-b-2 border-slate-800">Costo Ajuste</th>
                 <th className="py-4 text-right border-b-2 border-slate-800">Valor a Cobrar</th>
               </tr>
@@ -95,7 +95,14 @@ const CobrosReport: React.FC<CobrosReportProps> = ({
                 <tr key={item.id} className="text-sm">
                   <td className="py-5">
                     <p className="font-black text-slate-800 uppercase leading-none mb-1">{item.Artículo}</p>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase">{item.Subartículo} • {item["Centro de Costos"]}</p>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase">
+                      {item.Subartículo} • <span className="text-slate-500">{item["Centro de Costos"]}</span>
+                    </p>
+                  </td>
+                  <td className="py-5 text-center">
+                    <span className="px-3 py-1 bg-slate-100 rounded-lg text-[10px] font-black text-slate-600 uppercase tracking-widest">
+                      {item.Unidad || 'N/A'}
+                    </span>
                   </td>
                   <td className="py-5 text-center font-black text-slate-600">
                     {Math.abs(item["Variación Stock"])}
@@ -110,7 +117,7 @@ const CobrosReport: React.FC<CobrosReportProps> = ({
               ))}
               {itemsToCharge.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="py-20 text-center text-slate-300 font-black uppercase tracking-widest text-sm">
+                  <td colSpan={5} className="py-20 text-center text-slate-300 font-black uppercase tracking-widest text-sm">
                     No se registran cobros pendientes para los criterios seleccionados.
                   </td>
                 </tr>
@@ -118,7 +125,7 @@ const CobrosReport: React.FC<CobrosReportProps> = ({
             </tbody>
             <tfoot>
               <tr>
-                <td colSpan={3} className="py-6 text-right font-black text-slate-400 uppercase text-xs tracking-widest">Total Liquidación:</td>
+                <td colSpan={4} className="py-6 text-right font-black text-slate-400 uppercase text-xs tracking-widest pr-4">Total Liquidación:</td>
                 <td className="py-6 text-right font-black text-3xl text-slate-800 tracking-tighter">
                   {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(totalCobro)}
                 </td>
@@ -126,7 +133,7 @@ const CobrosReport: React.FC<CobrosReportProps> = ({
             </tfoot>
           </table>
 
-          <div className="mt-24 flex flex-wrap gap-20">
+          <div className="mt-24 flex flex-wrap gap-20 print:gap-10">
             <div className="flex-1 min-w-[200px] border-t-2 border-slate-200 pt-5">
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-10">Firma Administrador Sede</p>
               <div className="border-b border-dashed border-slate-300 h-8"></div>
