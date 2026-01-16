@@ -75,16 +75,12 @@ export const processInventoryData = (data: any[]): ProcessedItem[] => {
     const rawCobro = parseCurrency(row["Cobro"]);
     const costoAjuste = parseCurrency(row["Costo Ajuste"]);
     
+    // Si no hay cobro pero hay costo de ajuste, calculamos el cobro.
     const cobro = (rawCobro === 0 && costoAjuste !== 0) ? Math.abs(costoAjuste) : rawCobro;
     const reliability = variacion === 0 ? 1 : 0;
     
     let unidad = String(
-      row["Unidad"] || 
-      row["Unid."] || 
-      row["U.M."] || 
-      row["Unid"] || 
-      row["UNIDAD"] || 
-      ""
+      row["Unidad"] || row["Unid."] || row["U.M."] || row["Unid"] || row["UNIDAD"] || ""
     ).trim().toUpperCase();
 
     const commonUnits = ["ONZA", "UNIDADES", "GRAMOS", "KG", "GRAMO", "ONZAS", "UND", "UNIDAD", "LT", "LITRO", "BOTELLA"];
@@ -175,7 +171,7 @@ export const aggregateSedeMetrics = (processedData: ProcessedItem[]): SedeMetric
 };
 
 /**
- * REGLA VISUAL ACTUALIZADA:
+ * REGLA VISUAL DE NEGOCIO:
  * 🟢 ≥ 85% → Confiable
  * 🟡 60% – 84% → Atención
  * 🔴 < 60% → Crítico
