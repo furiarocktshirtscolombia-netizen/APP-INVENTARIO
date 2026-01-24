@@ -66,7 +66,7 @@ const Dashboard: React.FC<DashboardProps> = ({ metrics, data, onSelectCC }) => {
             <p className="text-3xl font-black uppercase tracking-tight leading-none">Punto Crítico: <span className="text-rose-500">{mostCriticalSede?.almacen || '---'}</span></p>
             <div className="flex gap-6 mt-4">
                <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-rose-500"></div><span className="text-[10px] font-bold text-slate-400 uppercase">Salud Operativa: {mostCriticalSede?.globalReliability.toFixed(1)}%</span></div>
-               <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-amber-500"></div><span className="text-[10px] font-bold text-slate-400 uppercase">Impacto Balance: {formatCurrency(totalCobro)}</span></div>
+               <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-amber-500"></div><span className="text-[10px] font-bold text-slate-400 uppercase">Costo General: {formatCurrency(totalCobro)}</span></div>
             </div>
           </div>
         </div>

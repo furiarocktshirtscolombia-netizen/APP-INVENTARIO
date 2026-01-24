@@ -29,18 +29,26 @@ const App: React.FC = () => {
     setConsecutive(`Cobro${currentCounter.toString().padStart(3, '0')}`);
   }, []);
 
+  // Resetear fechas al cambiar de modo para evitar conflictos de formato de input
+  const handleFilterModeChange = (mode: FilterMode) => {
+    setFilterMode(mode);
+    setStartDate('');
+    setEndDate('');
+  };
+
   const filteredData = useMemo(() => {
     let result = data;
     if (selectedSede !== 'Todas') result = result.filter(item => item.Almacén === selectedSede);
     if (selectedCentroCosto !== 'Todos') result = result.filter(item => item["Centro de Costos"] === selectedCentroCosto);
     if (selectedEstado !== 'Todos') result = result.filter(item => item.Estado_Normalizado === selectedEstado);
+    
     if (filterMode === 'Día') {
       if (startDate) result = result.filter(item => item.Fecha_Operativa >= startDate);
       if (endDate) result = result.filter(item => item.Fecha_Operativa <= endDate);
     } else {
       if (startDate) {
-        const monthFilter = startDate.substring(0, 7);
-        result = result.filter(item => item.Fecha_Operativa.startsWith(monthFilter));
+        // En modo Mes, startDate viene como YYYY-MM
+        result = result.filter(item => item.Fecha_Operativa.startsWith(startDate));
       }
     }
     return result;
@@ -48,7 +56,6 @@ const App: React.FC = () => {
 
   const sedeMetrics = useMemo(() => aggregateSedeMetrics(filteredData), [filteredData]);
   
-  // Cálculo local de confiabilidad por CC para el reporte impreso
   const ccReliabilityReport = useMemo(() => {
     const groups: Record<string, { total: number; perfect: number }> = {};
     filteredData.forEach(item => {
@@ -160,7 +167,6 @@ const App: React.FC = () => {
           </div>
         ) : (
           <div className="space-y-12">
-            {/* Resumen de Confiabilidad por CC para Reporte de Cobros */}
             <div className="p-10 bg-slate-50 rounded-[40px] border-2 border-slate-100">
                <h2 className="text-2xl font-black uppercase tracking-tighter mb-8">Confiabilidad de Inventarios por Centro de Costo</h2>
                <div className="grid grid-cols-3 gap-8">
@@ -204,17 +210,41 @@ const App: React.FC = () => {
       <div className="flex flex-col min-h-screen">
         <header className="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm no-print">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><div className="flex justify-between items-center h-20"><div className="flex items-center gap-8"><div className="flex items-center gap-3"><div className="bg-emerald-600 p-2.5 rounded-xl text-white shadow-lg"><i className="fa-solid fa-brain text-2xl"></i></div><h1 className="text-2xl font-black tracking-tighter text-slate-800">PROMPT <span className="text-emerald-600 uppercase">Maestro</span></h1></div><FileUpload onDataLoaded={handleDataLoaded} showFull={false} /></div><div className="flex items-center gap-4"><button onClick={handleDownloadReport} className="flex items-center gap-2 px-6 py-2.5 bg-slate-900 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-black transition-all shadow-md active:scale-95 cursor-pointer disabled:opacity-50" disabled={data.length === 0}><i className="fa-solid fa-file-pdf"></i>{isDownloading ? 'GENERANDO PDF...' : 'DESCARGAR REPORTE'}</button></div></div></div>
+          
+          {/* SECCIÓN DE FILTROS ACTUALIZADA */}
           <div className="bg-slate-50 border-t border-slate-200 py-6">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-wrap gap-x-6 gap-y-4 items-end">
               <div className="flex flex-col"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Sede / Almacén</label><select className="bg-white border-2 border-slate-200 rounded-2xl px-5 py-3 text-xs font-black text-slate-700 shadow-sm min-w-[180px]" value={selectedSede} onChange={(e) => setSelectedSede(e.target.value)}>{sedesList.map(s => <option key={s} value={s}>{s}</option>)}</select></div>
               <div className="flex flex-col"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Centro de Costo</label><select className="bg-white border-2 border-slate-200 rounded-2xl px-5 py-3 text-xs font-black text-slate-700 shadow-sm min-w-[150px]" value={selectedCentroCosto} onChange={(e) => setSelectedCentroCosto(e.target.value)}>{centroCostoList.map(cc => <option key={cc} value={cc}>{cc}</option>)}</select></div>
               <div className="flex flex-col"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Estado (Normalizado)</label><select className="bg-white border-2 border-slate-200 rounded-2xl px-5 py-3 text-xs font-black text-slate-700 shadow-sm min-w-[140px]" value={selectedEstado} onChange={(e) => setSelectedEstado(e.target.value)}><option value="Todos">Todos</option><option value="Faltantes">Faltantes</option><option value="Sobrantes">Sobrantes</option><option value="Sin Novedad">Sin Novedad</option></select></div>
-              <div className="flex flex-col"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Modo Temporal</label><div className="flex bg-white p-1 rounded-2xl border-2 border-slate-200 shadow-sm"><button onClick={() => setFilterMode('Día')} className={`px-4 py-2 text-[10px] font-black uppercase rounded-xl ${filterMode === 'Día' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400'}`}>Día</button><button onClick={() => setFilterMode('Mes')} className={`px-4 py-2 text-[10px] font-black uppercase rounded-xl ${filterMode === 'Mes' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400'}`}>Mes</button></div></div>
-              <div className="flex flex-col"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">{filterMode === 'Día' ? 'Fecha' : 'Mes'}</label><input type={filterMode === 'Día' ? "date" : "month"} className="bg-white border-2 border-slate-200 rounded-2xl px-4 py-3 text-xs font-bold shadow-sm" value={startDate} onChange={(e) => setStartDate(e.target.value)} /></div>
+              
+              <div className="flex flex-col"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Modo Temporal</label><div className="flex bg-white p-1 rounded-2xl border-2 border-slate-200 shadow-sm"><button onClick={() => handleFilterModeChange('Día')} className={`px-4 py-2 text-[10px] font-black uppercase rounded-xl ${filterMode === 'Día' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400'}`}>Día</button><button onClick={() => handleFilterModeChange('Mes')} className={`px-4 py-2 text-[10px] font-black uppercase rounded-xl ${filterMode === 'Mes' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400'}`}>Mes</button></div></div>
+              
+              <div className="flex items-end gap-3">
+                <div className="flex flex-col">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">{filterMode === 'Día' ? 'Desde' : 'Mes'}</label>
+                  <input type={filterMode === 'Día' ? "date" : "month"} className="bg-white border-2 border-slate-200 rounded-2xl px-4 py-3 text-xs font-bold shadow-sm min-w-[150px]" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+                </div>
+                {filterMode === 'Día' && (
+                  <div className="flex flex-col">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Hasta</label>
+                    <input type="date" className="bg-white border-2 border-slate-200 rounded-2xl px-4 py-3 text-xs font-bold shadow-sm min-w-[150px]" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+                  </div>
+                )}
+                <button 
+                  onClick={() => { setStartDate(''); setEndDate(''); }}
+                  className="bg-slate-200 text-slate-500 hover:bg-rose-100 hover:text-rose-600 p-3.5 rounded-2xl transition-colors shadow-sm"
+                  title="Limpiar fechas"
+                >
+                  <i className="fa-solid fa-trash-can"></i>
+                </button>
+              </div>
             </div>
           </div>
+
           <nav className="bg-white border-t border-slate-200 px-4"><div className="max-w-7xl mx-auto flex gap-4 overflow-x-auto no-scrollbar"><NavBtn active={activeView === 'dashboard'} label="Resumen Dashboard" onClick={() => setActiveView('dashboard')} /><NavBtn active={activeView === 'detail'} label="Detalle General" onClick={() => setActiveView('detail')} /><NavBtn active={activeView === 'cobros'} label="Informe de Cobros" onClick={() => setActiveView('cobros')} highlight /><NavBtn active={activeView === 'critical'} label="Items Críticos" onClick={() => setActiveView('critical')} /></div></nav>
         </header>
+
         <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10">
           {data.length === 0 ? (<div className="flex flex-col items-center justify-center h-[60vh] text-slate-400"><i className="fa-solid fa-file-excel text-8xl mb-6 text-emerald-600 opacity-20"></i><h2 className="text-2xl font-black uppercase tracking-tighter">Sin Datos Cargados</h2><p className="text-sm font-medium">Use el botón superior para importar el reporte de Excel.</p></div>) : (
             <div>

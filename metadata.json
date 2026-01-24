@@ -1,5 +1,5 @@
 {
-  "name": "Confiabilidad de Inventarios: Restaurante Inventory Dashboard",
+  "name": "Reliability Pro: Restaurante Inventory Dashboard",
   "description": "A high-end business application for measuring inventory reliability, managing losses, and generating collection reports for restaurant chains. Includes automated Excel data processing, weighted reliability metrics, and critical item tracking.",
   "requestFramePermissions": []
 }
